@@ -17,6 +17,7 @@ const schema = z.object({
   depositAmount: z.number().positive().max(9999.99).nullable().optional(),
   depositRequired: z.boolean(),
   pricingNotes: z.string().max(1000).trim(),
+  priceTier: z.string().optional().default('££'),
   timezone: z.string().min(1),
   availability: z.array(
     z.object({
@@ -72,27 +73,40 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const now = new Date().toISOString()
 
   // Update artist profile + pricing
-  const { error: artistError } = await supabase
+  const updatePayload: any = {
+    display_name: d.displayName,
+    bio: d.bio,
+    style_tags: d.styleTags,
+    instagram_handle: d.instagramHandle,
+    studio_name: d.studioName || null,
+    studio_address: d.studioAddress || null,
+    studio_lat: d.studioLat ?? null,
+    studio_lng: d.studioLng ?? null,
+    hourly_rate: d.hourlyRate ?? null,
+    deposit_amount: d.depositAmount ?? null,
+    deposit_required: d.depositRequired,
+    pricing_notes: d.pricingNotes || null,
+    price_tier: d.priceTier || '££',
+    email_booking_confirmation: d.emailBookingConfirmation,
+    email_reminders: d.emailReminders,
+    email_aftercare: d.emailAftercare,
+    updated_at: now,
+  }
+
+  let { error: artistError } = await supabase
     .from('artists')
-    .update({
-      display_name: d.displayName,
-      bio: d.bio,
-      style_tags: d.styleTags,
-      instagram_handle: d.instagramHandle,
-      studio_name: d.studioName || null,
-      studio_address: d.studioAddress || null,
-      studio_lat: d.studioLat ?? null,
-      studio_lng: d.studioLng ?? null,
-      hourly_rate: d.hourlyRate ?? null,
-      deposit_amount: d.depositAmount ?? null,
-      deposit_required: d.depositRequired,
-      pricing_notes: d.pricingNotes || null,
-      email_booking_confirmation: d.emailBookingConfirmation,
-      email_reminders: d.emailReminders,
-      email_aftercare: d.emailAftercare,
-      updated_at: now,
-    })
+    .update(updatePayload)
     .eq('id', d.artistId)
+
+  // Graceful fallback if price_tier column doesn't exist yet
+  if (artistError && (artistError.message.includes('price_tier') || artistError.code === '42703')) {
+    delete updatePayload.price_tier
+    const retry = await supabase
+      .from('artists')
+      .update(updatePayload)
+      .eq('id', d.artistId)
+    artistError = retry.error
+  }
 
   if (artistError) {
     return NextResponse.json({ error: 'Failed to save profile' }, { status: 500 })

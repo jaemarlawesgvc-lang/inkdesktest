@@ -30,6 +30,7 @@ interface SettingsData {
   depositAmount: number | null
   depositRequired: boolean
   pricingNotes: string
+  priceTier: string
   timezone: string
   availability: AvailabilitySlot[]
   emailBookingConfirmation: boolean
@@ -278,6 +279,21 @@ export function SettingsForm({ artistId, plan, initialData }: SettingsFormProps)
             <span className="pl-4 pr-2 text-white/40 text-sm">£</span>
             <input id="hourlyRate" type="number" min={0} step={0.01} value={data.hourlyRate ?? ''} onChange={(e) => set('hourlyRate', e.target.value ? parseFloat(e.target.value) : null)} className="flex-1 bg-transparent py-2.5 pr-4 text-white text-sm focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" placeholder="0.00" />
           </div>
+        </Field>
+        <Field label="Price tier" id="priceTier">
+          <select
+            id="priceTier"
+            value={data.priceTier || '££'}
+            onChange={(e) => set('priceTier', e.target.value)}
+            className="w-full bg-white/5 border border-white/20 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-white/50 transition-colors"
+          >
+            <option value="£" className="bg-zinc-950 text-white">£ (Budget-friendly / Apprentice)</option>
+            <option value="££" className="bg-zinc-950 text-white">££ (Standard / Mid-range)</option>
+            <option value="£££" className="bg-zinc-950 text-white">£££ (Premium / High-end)</option>
+          </select>
+          <p className="text-xs text-white/30 mt-1">
+            Price tiers help clients quickly search and filter artists by budget.
+          </p>
         </Field>
         <div className="flex items-center justify-between">
           <div>

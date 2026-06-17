@@ -48,8 +48,6 @@ interface ArtistRecord {
   deposit_amount: number | null
   studio_name: string | null
   studio_address: string | null
-  studio_lat: number | null
-  studio_lng: number | null
   instagram_handle: string | null
   pricing_notes: string | null
   site_data: SiteData | null
@@ -70,23 +68,7 @@ async function loadArtist(username: string): Promise<ArtistRecord | null> {
     .from('artists')
     .select(
       `
-      id,
-      user_id,
-      username,
-      display_name,
-      bio,
-      style_tags,
-      years_experience,
-      deposit_required,
-      deposit_amount,
-      studio_name,
-      studio_address,
-      studio_lat,
-      studio_lng,
-      instagram_handle,
-      pricing_notes,
-      site_data,
-      onboarding_complete,
+      *,
       portfolio_images (
         public_url,
         caption,
@@ -98,7 +80,11 @@ async function loadArtist(username: string): Promise<ArtistRecord | null> {
     .is('deleted_at', null)
     .maybeSingle()
 
-  if (error || !data) return null
+  if (error || !data) {
+    console.error('[loadArtist] Query failed:', { error, data, username })
+    return null
+  }
+  console.log('[loadArtist] Found artist:', { username: data.username, onboarding_complete: data.onboarding_complete })
   return data as unknown as ArtistRecord
 }
 
@@ -333,8 +319,8 @@ export default async function ArtistPage({
         <StudioSection
           studioName={artist.studio_name}
           studioAddress={artist.studio_address}
-          lat={artist.studio_lat}
-          lng={artist.studio_lng}
+          lat={null}
+          lng={null}
           accentColor={accent}
         />
 

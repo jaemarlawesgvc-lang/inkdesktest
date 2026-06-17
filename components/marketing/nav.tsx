@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 
 const NAV_LINKS = [
+  { label: 'Explore Artists', href: '/artists' },
   { label: 'Features', href: '/features' },
   { label: 'Pricing',  href: '/pricing'  },
   { label: 'About',    href: '/about'    },

@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { SettingsForm } from '@/components/dashboard/SettingsForm'
+import { AccountSection } from '@/components/dashboard/AccountSection'
 import { FaqManager } from '@/components/dashboard/FaqManager'
 import { CredentialsManager } from '@/components/dashboard/CredentialsManager'
 import { resolveActivePlan } from '@/lib/stripe/plans'
@@ -21,23 +22,7 @@ export default async function SettingsPage() {
     .from('artists')
     .select(
       `
-      id,
-      username,
-      display_name,
-      bio,
-      style_tags,
-      instagram_handle,
-      studio_name,
-      studio_address,
-      studio_lat,
-      studio_lng,
-      hourly_rate,
-      deposit_amount,
-      deposit_required,
-      pricing_notes,
-      email_booking_confirmation,
-      email_reminders,
-      email_aftercare,
+      *,
       artist_availability (
         day_of_week,
         start_time,
@@ -116,6 +101,11 @@ export default async function SettingsPage() {
         <p className="text-white/40 text-sm mt-0.5">Manage your profile, pricing, and account.</p>
       </div>
 
+      <AccountSection
+        userEmail={user.email ?? ''}
+        lastSignIn={user.last_sign_in_at ?? null}
+      />
+
       <SettingsForm
         artistId={artist.id}
         plan={plan}
@@ -126,12 +116,13 @@ export default async function SettingsPage() {
           instagramHandle: artist.instagram_handle ?? '',
           studioName: artist.studio_name ?? '',
           studioAddress: artist.studio_address ?? '',
-          studioLat: artist.studio_lat,
-          studioLng: artist.studio_lng,
-          hourlyRate: artist.hourly_rate,
-          depositAmount: artist.deposit_amount,
+          studioLat: artist.studio_lat ?? null,
+          studioLng: artist.studio_lng ?? null,
+          hourlyRate: artist.hourly_rate ?? null,
+          depositAmount: artist.deposit_amount ?? null,
           depositRequired: artist.deposit_required ?? true,
           pricingNotes: artist.pricing_notes ?? '',
+          priceTier: artist.price_tier ?? '££',
           timezone: firstSlot?.timezone ?? 'Europe/London',
           availability,
           emailBookingConfirmation: artist.email_booking_confirmation ?? true,

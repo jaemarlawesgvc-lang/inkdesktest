@@ -29,4 +29,12 @@ export const RetryWebhookSchema = z.object({
   eventId: z.string().uuid('Invalid event ID'),
 })
 
-export type RetryWebhookInput = z.infer<typeof RetryWebhookSchema>
+// ─── Artist Verification ──────────────────────────────────────────────────────
+
+export const VerifyArtistSchema = z.object({
+  artistId: z.string().uuid('Invalid artist ID'),
+  verify: z.boolean(),
+})
+
+export type VerifyArtistInput = z.infer<typeof VerifyArtistSchema>
+

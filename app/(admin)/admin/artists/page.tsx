@@ -22,6 +22,7 @@ export default async function AdminArtistsPage() {
       user_id,
       username,
       display_name,
+      is_verified,
       onboarding_complete,
       onboarding_step,
       created_at,
@@ -37,7 +38,7 @@ export default async function AdminArtistsPage() {
     .order('created_at', { ascending: false })
     .limit(500)
 
-  const mappedArtists = (artists ?? []).map((a) => {
+  const mappedArtists = (artists ?? []).map((a: any) => {
     const profile = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles
     const sub = profile
       ? (Array.isArray(profile.subscriptions) ? profile.subscriptions[0] : profile.subscriptions)
@@ -53,6 +54,7 @@ export default async function AdminArtistsPage() {
       onboardingComplete: a.onboarding_complete ?? false,
       onboardingStep: a.onboarding_step ?? 1,
       createdAt: a.created_at,
+      isVerified: a.is_verified ?? false,
     }
   })
 
