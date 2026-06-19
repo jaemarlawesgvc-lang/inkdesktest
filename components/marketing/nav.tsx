@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 
 const NAV_LINKS = [
-  { label: 'Portfolio', href: '#portfolio' },
-  { label: 'About Studio', href: '#about' },
-  { label: 'Booking Inquiry', href: '#booking' },
+  { label: 'Features', href: '/features' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'About', href: '/about' },
 ] as const
 
 function MenuIcon() {
@@ -59,9 +59,10 @@ export function Nav() {
           {/* ── Logo ── */}
           <Link
             href="/"
-            className="font-display text-xl font-extrabold tracking-widest text-parchment-100 shrink-0"
+            className="flex shrink-0 items-center gap-2 font-display text-xl font-extrabold tracking-tight text-parchment-100"
           >
-            IDEAL<span className="text-gold-500">.</span>
+            <span className="h-2 w-2 rounded-full bg-gold-500 shadow-gold" aria-hidden="true" />
+            InkDesk
           </Link>
 
           {/* ── Desktop nav ── */}

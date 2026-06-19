@@ -1,18 +1,19 @@
 import type { Metadata } from 'next'
-import { IdealHero }      from '@/components/marketing/IdealHero'
-import { IdealPortfolio } from '@/components/marketing/IdealPortfolio'
-import { IdealAbout }     from '@/components/marketing/IdealAbout'
-import { IdealBooking }   from '@/components/marketing/IdealBooking'
+import { HomeHero }     from '@/components/marketing/home/HomeHero'
+import { FeedShowcase } from '@/components/marketing/home/FeedShowcase'
+import { HomeFeatures } from '@/components/marketing/home/HomeFeatures'
+import { HomeProcess }  from '@/components/marketing/home/HomeProcess'
+import { HomeCTA }      from '@/components/marketing/home/HomeCTA'
 
 export const metadata: Metadata = {
-  title: 'Ideal Tattoo Studio — Luxury Custom Tattooing & Fine-Line',
+  title: 'InkDesk — Your tattoo portfolio, booking site & deposits in one',
   description:
-    'Bespoke tattoo art designed to trace the anatomy of your identity. Specializing in luxury Fine-line, Blackwork, and Neo-Traditional styles in London.',
+    'InkDesk turns your tattoo photos into a premium booking website in seconds. Online bookings, Stripe deposits and automated follow-ups — with no commission on your earnings. Start free.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'Ideal Tattoo Studio — Luxury Custom Tattooing & Fine-Line',
+    title: 'InkDesk — Your tattoo portfolio, booking site & deposits in one',
     description:
-      'Bespoke tattoo art designed to trace the anatomy of your identity. Specializing in luxury Fine-line, Blackwork, and Neo-Traditional styles in London.',
+      'Turn your tattoo feed into a website that books clients and collects deposits. AI-generated, premium, and commission-free. Start free with a 30-day Pro trial.',
     url: '/',
   },
 }
@@ -20,10 +21,11 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <>
-      <IdealHero />
-      <IdealPortfolio />
-      <IdealAbout />
-      <IdealBooking />
+      <HomeHero />
+      <FeedShowcase />
+      <HomeFeatures />
+      <HomeProcess />
+      <HomeCTA />
     </>
   )
 }

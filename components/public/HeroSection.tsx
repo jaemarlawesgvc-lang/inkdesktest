@@ -11,8 +11,20 @@ interface HeroSectionProps {
   ctaText: string
   accentColor: string
   artistName: string
+  username: string
+  instagramHandle?: string | null
   styleTags?: string[]
   images?: HeroImage[]
+  portfolioCount?: number
+  yearsExperience?: number | null
+  rating?: number | null
+  reviewCount?: number
+  isLicensed?: boolean
+}
+
+interface Stat {
+  value: string
+  label: string
 }
 
 export function HeroSection({
@@ -21,104 +33,113 @@ export function HeroSection({
   ctaText,
   accentColor,
   artistName,
+  username,
+  instagramHandle,
   styleTags = [],
   images = [],
+  portfolioCount = 0,
+  yearsExperience,
+  rating,
+  reviewCount = 0,
+  isLicensed = false,
 }: HeroSectionProps) {
-  const bg = images.length > 0 ? images[0] : null
-  // Up to 4 secondary images for a clean 2×2 gallery wall beside the headline.
-  const galleryImages = images.slice(1, 5)
+  const avatar = images[0] ?? null
+  const backdrop = images[0] ?? null
+  const handle = (instagramHandle ?? username).replace(/^@/, '')
+
+  // Authentic, real-data stats only — no fabricated follower counts.
+  const stats: Stat[] = []
+  if (portfolioCount > 0) stats.push({ value: String(portfolioCount), label: portfolioCount === 1 ? 'piece' : 'pieces' })
+  if (styleTags.length > 0) stats.push({ value: String(styleTags.length), label: styleTags.length === 1 ? 'style' : 'styles' })
+  if (rating && reviewCount > 0) stats.push({ value: rating.toFixed(1), label: `★ (${reviewCount})` })
+  if (yearsExperience && yearsExperience > 0) stats.push({ value: `${yearsExperience}y`, label: 'experience' })
 
   return (
-    <section
-      className="relative min-h-screen flex items-center overflow-hidden bg-black"
-      aria-label="Introduction"
-    >
-      {/* ── Full-bleed background imagery with cinematic Ken Burns zoom ── */}
-      {bg ? (
+    <section className="relative flex min-h-screen items-center overflow-hidden bg-black" aria-label="Profile">
+      {/* ── Atmospheric backdrop ── */}
+      {backdrop ? (
         <div className="absolute inset-0" aria-hidden="true">
-          <Image
-            src={bg.publicUrl}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover animate-ken-burns"
-          />
-          {/* Legibility + mood overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/60" />
-          {/* Vignette */}
-          <div className="absolute inset-0 [box-shadow:inset_0_0_220px_60px_rgba(0,0,0,0.9)]" />
+          <Image src={backdrop.publicUrl} alt="" fill priority sizes="100vw" className="scale-110 object-cover blur-2xl opacity-40 animate-ken-burns" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black" />
         </div>
       ) : (
-        <div
-          className="absolute inset-0 bg-gradient-to-b from-black via-zinc-950 to-black"
-          aria-hidden="true"
-        />
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-black to-black" aria-hidden="true" />
       )}
 
-      {/* Ambient accent glows */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      {/* Accent glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div
-          className="absolute top-1/4 -left-20 w-[600px] h-[600px] rounded-full blur-[150px] opacity-[0.18] animate-pulse"
-          style={{
-            background: `radial-gradient(circle, ${accentColor} 0%, transparent 70%)`,
-            animationDuration: '5s',
-          }}
+          className="absolute -left-24 top-1/4 h-[34rem] w-[34rem] rounded-full opacity-[0.16] blur-[140px]"
+          style={{ background: `radial-gradient(circle, ${accentColor} 0%, transparent 70%)` }}
         />
       </div>
+      <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.12] mix-blend-overlay" aria-hidden="true" />
 
-      {/* Grain texture */}
-      <div
-        className="absolute inset-0 bg-noise opacity-[0.12] mix-blend-overlay pointer-events-none"
-        aria-hidden="true"
-      />
+      {/* ── Profile card ── */}
+      <div className="relative z-10 mx-auto w-full max-w-3xl px-6 py-28 sm:px-10">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-7 backdrop-blur-xl sm:p-10 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]">
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
+            {/* Avatar */}
+            <div className="shrink-0">
+              <div className="rounded-full p-[3px]" style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}40)` }}>
+                <div className="relative h-28 w-28 overflow-hidden rounded-full border-[3px] border-black sm:h-32 sm:w-32">
+                  {avatar ? (
+                    <Image src={avatar.publicUrl} alt={artistName} fill sizes="128px" priority className="object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-zinc-900 font-display text-4xl font-bold text-white/80">
+                      {artistName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 py-28 grid lg:grid-cols-12 gap-12 items-center">
-        {/* ── Text column ── */}
-        <div className="lg:col-span-7 space-y-7 text-left">
-          {/* Live badge */}
-          <div
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-white/[0.04] border border-white/10 backdrop-blur-md animate-fade-up opacity-0 [animation-fill-mode:forwards] [animation-delay:100ms]"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: accentColor }} />
-              <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: accentColor }} />
-            </span>
-            <span className="text-white/75">Booking Available</span>
+            {/* Identity */}
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <h1 className="font-display text-3xl font-bold leading-tight text-white sm:text-4xl">{headline}</h1>
+                {isLicensed && (
+                  <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[0.7rem] font-semibold" style={{ backgroundColor: `${accentColor}22`, color: accentColor }}>
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M16.403 12.652a3 3 0 000-5.304 3 3 0 00-3.75-3.751 3 3 0 00-5.305 0 3 3 0 00-3.751 3.75 3 3 0 000 5.305 3 3 0 003.75 3.751 3 3 0 005.305 0 3 3 0 003.751-3.75zm-2.546-4.46a.75.75 0 00-1.214-.883l-3.236 4.53-1.69-1.69a.75.75 0 00-1.06 1.061l2.31 2.31a.75.75 0 001.137-.089l3.753-5.25z" clipRule="evenodd" /></svg>
+                    Licensed
+                  </span>
+                )}
+              </div>
+
+              <a
+                href={instagramHandle ? `https://instagram.com/${handle}` : '#portfolio'}
+                target={instagramHandle ? '_blank' : undefined}
+                rel={instagramHandle ? 'noopener noreferrer' : undefined}
+                className="mt-1 inline-block text-sm font-medium text-white/55 transition-colors hover:text-white"
+              >
+                @{handle}
+              </a>
+
+              {/* Stats */}
+              {stats.length > 0 && (
+                <div className="mt-5 flex flex-wrap justify-center gap-x-7 gap-y-2 sm:justify-start">
+                  {stats.map((s) => (
+                    <div key={s.label} className="text-center sm:text-left">
+                      <span className="font-display text-xl font-bold text-white">{s.value}</span>{' '}
+                      <span className="text-xs text-white/45">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bio */}
+              <p className="mx-auto mt-5 max-w-md text-[0.95rem] leading-relaxed text-white/70 sm:mx-0">{subheadline}</p>
+            </div>
           </div>
 
-          {/* Artist name — animated gradient display type */}
-          <h1 className="font-serif font-bold tracking-tight leading-[0.95] animate-fade-up opacity-0 [animation-fill-mode:forwards] [animation-delay:200ms]">
-            <span className="block text-sm sm:text-base font-sans font-medium uppercase tracking-[0.3em] text-white/50 mb-4">
-              {headline === artistName ? 'Tattoo Artist' : artistName}
-            </span>
-            <span
-              className="block text-5xl sm:text-7xl lg:text-8xl text-transparent bg-clip-text animate-gradient-text"
-              style={{
-                backgroundImage: `linear-gradient(110deg, #ffffff 0%, ${accentColor} 35%, #ffffff 70%, ${accentColor} 100%)`,
-              }}
-            >
-              {headline}
-            </span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-white/65 max-w-xl leading-relaxed animate-fade-up opacity-0 [animation-fill-mode:forwards] [animation-delay:300ms]">
-            {subheadline}
-          </p>
-
-          {/* Style tags */}
+          {/* Style "highlights" */}
           {styleTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 animate-fade-up opacity-0 [animation-fill-mode:forwards] [animation-delay:350ms]">
-              {styleTags.slice(0, 5).map((tag) => (
+            <div className="mt-6 flex flex-wrap justify-center gap-2 sm:justify-start">
+              {styleTags.slice(0, 6).map((tag) => (
                 <span
                   key={tag}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm"
-                  style={{
-                    borderColor: `${accentColor}30`,
-                    color: '#f5f5f0',
-                    backgroundColor: `${accentColor}10`,
-                  }}
+                  className="rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur-sm"
+                  style={{ borderColor: `${accentColor}35`, backgroundColor: `${accentColor}12`, color: '#f5f5f0' }}
                 >
                   {tag}
                 </span>
@@ -126,83 +147,28 @@ export function HeroSection({
             </div>
           )}
 
-          {/* CTA */}
-          <div className="pt-3 flex flex-wrap items-center gap-4 animate-fade-up opacity-0 [animation-fill-mode:forwards] [animation-delay:450ms]">
+          {/* Actions */}
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <a
               href="#book"
-              className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl text-base font-bold transition-all duration-300 transform hover:-translate-y-1 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black overflow-hidden shadow-2xl"
-              style={{
-                backgroundColor: accentColor,
-                color: '#0a0a0a',
-                ['--tw-ring-color' as string]: accentColor,
-                boxShadow: `0 10px 40px ${accentColor}40`,
-              }}
+              className="group inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-base font-bold shadow-2xl transition-transform duration-200 hover:-translate-y-0.5 active:scale-95"
+              style={{ backgroundColor: accentColor, color: '#0a0a0a', boxShadow: `0 12px 36px ${accentColor}40` }}
             >
-              <span className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
-              <span className="relative z-10">{ctaText}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1.5">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              {ctaText}
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1"><path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
             </a>
             <a
               href="#portfolio"
-              className="inline-flex items-center gap-2 px-6 py-4 rounded-xl text-base font-semibold text-white/80 border border-white/15 hover:border-white/30 hover:text-white backdrop-blur-sm transition-all duration-200"
+              className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/15 px-6 py-3.5 text-base font-semibold text-white/85 backdrop-blur-sm transition-colors hover:border-white/30 hover:text-white"
             >
-              View work
+              View the work
             </a>
           </div>
         </div>
-
-        {/* ── Gallery wall (desktop, when extra images exist) ── */}
-        {galleryImages.length > 0 && (
-          <div className="hidden lg:block lg:col-span-5" aria-hidden="true">
-            {/* Float applied to the wrapper so cards move in unison and
-                never close the gap between each other. */}
-            <div className="grid grid-cols-2 gap-4 animate-float-y">
-              {galleryImages.map((img, i) => (
-                <div
-                  key={i}
-                  className={[
-                    'group relative aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 shadow-2xl',
-                    // Offset the right-hand column downward for a curated rhythm.
-                    i % 2 === 1 ? 'mt-10' : '',
-                  ].join(' ')}
-                  style={{ boxShadow: '0 25px 60px -15px rgba(0,0,0,0.8)' }}
-                >
-                  <Image
-                    src={img.publicUrl}
-                    alt=""
-                    fill
-                    sizes="(max-width: 1024px) 0px, 220px"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Bottom fade into next section */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
-
-      {/* Scroll cue */}
-      <div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-fade-in [animation-delay:1000ms] opacity-0 [animation-fill-mode:forwards]"
-        aria-hidden="true"
-      >
-        <span className="text-[9px] uppercase tracking-widest text-white/40 font-semibold">Scroll</span>
-        <div className="w-[1px] h-10 bg-white/15 relative overflow-hidden rounded-full">
-          <div
-            className="absolute top-0 left-0 right-0 w-full h-1/2 rounded-full animate-shimmer"
-            style={{
-              background: `linear-gradient(to bottom, transparent, ${accentColor}, transparent)`,
-              animationDuration: '2s',
-            }}
-          />
-        </div>
-      </div>
+      {/* Bottom fade */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black to-transparent" />
     </section>
   )
 }

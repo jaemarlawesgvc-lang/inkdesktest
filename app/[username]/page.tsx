@@ -14,6 +14,7 @@ import { StudioSection } from '@/components/public/StudioSection'
 import { ReviewsSection } from '@/components/public/ReviewsSection'
 import { WaitlistButton } from '@/components/public/WaitlistButton'
 import { BookingSection } from '@/components/public/BookingSection'
+import { StickyBookCta } from '@/components/public/StickyBookCta'
 import { Footer } from '@/components/public/Footer'
 import { JsonLd } from '@/components/public/JsonLd'
 
@@ -228,6 +229,11 @@ export default async function ArtistPage({
     }
   })
 
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : null
+
   const fullyBooked = await isFullyBookedNext14Days(supabase, artist.id)
 
   const today = new Date().toISOString().slice(0, 10)
@@ -295,8 +301,15 @@ export default async function ArtistPage({
           ctaText={heroCta}
           accentColor={accent}
           artistName={name}
+          username={artist.username}
+          instagramHandle={artist.instagram_handle}
           styleTags={styleTags}
           images={portfolio}
+          portfolioCount={portfolio.length}
+          yearsExperience={artist.years_experience}
+          rating={avgRating}
+          reviewCount={reviews.length}
+          isLicensed={isLicensed}
         />
 
         <PortfolioMarquee images={portfolio} accentColor={accent} />
@@ -342,6 +355,8 @@ export default async function ArtistPage({
         />
 
         <Footer artistName={name} artistId={artist.id} artistEmail={artist.profiles?.email ?? undefined} />
+
+        <StickyBookCta accentColor={accent} ctaText={heroCta} artistName={name} />
       </div>
     </>
   )
