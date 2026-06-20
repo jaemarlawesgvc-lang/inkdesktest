@@ -34,10 +34,12 @@ export const apiRateLimit = new Ratelimit({
 })
 
 // 2. Auth routes (e.g. login, sign up, password reset)
-// 5 requests per minute
+// 10 submissions per minute per IP — only POST submissions are counted
+// (see middleware.ts), so this is 10 real sign-in/sign-up attempts a minute,
+// which still blocks brute-force without tripping on normal use.
 export const authRateLimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, '1 m'),
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
   analytics: true,
   prefix: '@upstash/ratelimit/auth',
 })

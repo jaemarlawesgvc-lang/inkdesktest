@@ -7,6 +7,18 @@ import { HERO_SHOTS } from '@/components/marketing/home/portfolio-data'
 export function HomeHero() {
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden bg-ink-950 pt-16">
+      {/* ── Full-bleed animated tattoo backdrop (decorative — no text on it) ── */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <img
+          src="/assets/images/portfolio/blackwork.png"
+          alt=""
+          className="h-full w-full scale-110 object-cover opacity-[0.20] animate-ken-burns"
+        />
+        {/* Darken so the headline + copy stay legible over the image */}
+        <div className="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/90 to-ink-950/55" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-transparent to-ink-950/70" />
+      </div>
+
       {/* Ambient layers */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-noise opacity-50" />
       <div

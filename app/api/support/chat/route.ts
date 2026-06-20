@@ -5,6 +5,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { callGeminiText } from '@/lib/gemini/client'
 
 export const runtime = 'nodejs'
+// Give Gemini room to answer without the serverless function being killed early
+// (a too-short timeout would surface as the chat "not responding").
+export const maxDuration = 30
 
 const SUPPORT_EMAIL = 'support@inkdesk.live'
 

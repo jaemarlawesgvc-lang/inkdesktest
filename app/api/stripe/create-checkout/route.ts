@@ -106,6 +106,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Stripe checkout creation failed'
     console.error('[create-checkout] Stripe error:', message)
-    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
+    // Surface the real Stripe reason (e.g. "No such price", "Invalid API Key",
+    // test/live mismatch) so misconfiguration is obvious instead of a generic
+    // "Failed to create checkout session".
+    return NextResponse.json({ error: `Checkout failed: ${message}` }, { status: 500 })
   }
 }

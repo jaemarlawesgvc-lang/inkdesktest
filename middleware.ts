@@ -139,8 +139,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Auth rate limiting for auth pages (protects against brute force)
-  if (isAuthPage(pathname)) {
+  // Auth rate limiting (brute-force protection) — only on actual submissions
+  // (POST: sign-in, sign-up, password reset, OAuth start). Previously this also
+  // counted page loads and Next.js RSC prefetches, so just viewing the login
+  // page a few times or retrying a password tripped "Too Many Requests".
+  if (isAuthPage(pathname) && request.method === 'POST') {
     try {
       const { success } = await authRateLimit.limit(ip)
       if (!success) {

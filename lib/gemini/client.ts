@@ -260,9 +260,12 @@ export async function callGemini(prompt: string): Promise<SiteData> {
 // ---------------------------------------------------------------------------
 
 const SUPPORT_MODELS = [
-  'gemini-2.5-pro',
-  'gemini-2.5-flash',
+  // Fast, widely-available model first — the same one the site generator uses
+  // successfully. gemini-2.5-pro used to be first, but it's slower and not
+  // always accessible on every key/region, which could make the support chat
+  // hang or fall back repeatedly before answering.
   'gemini-2.0-flash',
+  'gemini-2.5-flash',
   'gemini-flash-latest',
   'gemini-1.5-flash',
 ]
