@@ -7,16 +7,28 @@ import { HERO_SHOTS } from '@/components/marketing/home/portfolio-data'
 export function HomeHero() {
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden bg-ink-950 pt-16">
-      {/* ── Full-bleed animated tattoo backdrop (decorative — no text on it) ── */}
+      {/* ── Ornate tattoo backdrop — large, dark & vignetted (matches the
+            "IDEAL" reference look). Decorative; copy sits on top, no text on it. ── */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <img
-          src="/assets/images/portfolio/blackwork.png"
+          src="/assets/images/portfolio/neo-traditional.png"
           alt=""
-          className="h-full w-full scale-110 object-cover opacity-[0.20] animate-ken-burns"
+          className="h-full w-full scale-105 object-cover object-center opacity-[0.38] animate-ken-burns"
         />
-        {/* Darken so the headline + copy stay legible over the image */}
-        <div className="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/90 to-ink-950/55" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-transparent to-ink-950/70" />
+        {/* Warm amber cast over the greyscale ink */}
+        <div className="absolute inset-0 bg-gold-700/[0.12] mix-blend-soft-light" />
+        {/* Radial vignette — the design glows through the centre, edges fall to black */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(120% 120% at 50% 40%, rgba(8,8,8,0) 0%, rgba(8,8,8,0.5) 55%, rgba(8,8,8,0.94) 100%)',
+          }}
+        />
+        {/* A touch darker on the left so the headline + copy stay legible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-ink-950/85 via-ink-950/40 to-transparent" />
+        {/* Fade into the sections above and below */}
+        <div className="absolute inset-0 bg-gradient-to-b from-ink-950/70 via-transparent to-ink-950" />
       </div>
 
       {/* Ambient layers */}
