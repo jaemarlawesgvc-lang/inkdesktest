@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 const SUPPORT_EMAIL = 'support@inkdesk.live'
 
@@ -147,11 +148,11 @@ export function SupportModal() {
         <span className="hidden sm:inline">Get help</span>
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Get help">
+      {open && createPortal(
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Get help">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
 
-          <div className="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#171717] shadow-2xl">
+          <div className="relative flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-[#171717] shadow-2xl sm:max-h-[85vh] sm:rounded-2xl">
             {/* ── Header ── */}
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div className="flex items-center gap-2.5">
@@ -179,7 +180,7 @@ export function SupportModal() {
 
             {/* ── Menu view ── */}
             {view === 'menu' && (
-              <div className="space-y-3 p-5">
+              <div className="space-y-3 p-5" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
                 <p className="text-sm leading-relaxed text-white/55">
                   How would you like to get help?
                 </p>
@@ -218,7 +219,7 @@ export function SupportModal() {
             {/* ── Chat view ── */}
             {view === 'chat' && (
               <>
-                <div ref={scrollRef} className="min-h-[15rem] flex-1 space-y-3 overflow-y-auto px-4 py-4">
+                <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:min-h-[15rem]">
                   {messages.map((m, i) => (
                     <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       <div
@@ -244,7 +245,7 @@ export function SupportModal() {
                   )}
                 </div>
 
-                <div className="border-t border-white/10 p-3">
+                <div className="border-t border-white/10 p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
                   <div className="flex items-end gap-2">
                     <input
                       ref={inputRef}
@@ -279,7 +280,8 @@ export function SupportModal() {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )
