@@ -211,6 +211,20 @@ export const MIN_BOOKING_DESCRIPTION_CHARS = 10
 
 export const MAX_BOOKING_DESCRIPTION_CHARS = 1000
 
+/**
+ * Public bookings are consultation appointments — not full tattoo sessions.
+ * The artist schedules the actual session (duration varies by piece) after
+ * the consultation. Clients see this duration everywhere in the booking flow.
+ */
+export const CONSULTATION_DURATION_HOURS = 0.5
+
+/** Minutes between selectable consultation start times. */
+export const CONSULTATION_SLOT_INTERVAL_MINUTES = 30
+
+export const CONSULTATION_DURATION_LABEL = '30 minutes'
+
+export const CONSULTATION_BOOKING_TYPE = 'consultation' as const
+
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
 export const STORAGE_BUCKETS = {

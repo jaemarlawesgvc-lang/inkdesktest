@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { randomBytes } from 'crypto'
+import { CONSULTATION_DURATION_HOURS } from '@/lib/constants'
+import { getConsultationSlotsForDate } from '@/lib/booking/consultation-slots'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -16,15 +18,7 @@ export interface HoldResult {
 }
 
 // ---------------------------------------------------------------------------
-// isSlotAvailable — implements the spec's 5-step check
-//
-// 1. Check blocked_dates — if exists, return false
-// 2. Check artist_availability for day_of_week — if no record, return false
-// 3. Check bookings where status IN ('confirmed','deposit_paid') — if exists, return false
-// 4. Check booking_holds where expires_at > now() — if exists, return false
-// 5. Return true
-//
-// Uses admin client to bypass RLS (called from public API routes).
+// isSlotAvailable — consultation slot model with overlap detection
 // ---------------------------------------------------------------------------
 
 export async function isSlotAvailable(
@@ -32,82 +26,37 @@ export async function isSlotAvailable(
   artistId: string,
   date: string,
   time?: string,
+  durationHours: number = CONSULTATION_DURATION_HOURS,
 ): Promise<AvailabilityResult> {
-  // ── Step 1: Blocked dates ──
-  const { data: blocked } = await supabase
-    .from('blocked_dates')
-    .select('id')
-    .eq('artist_id', artistId)
-    .eq('blocked_date', date)
-    .maybeSingle()
+  const { slots, reason } = await getConsultationSlotsForDate(
+    supabase,
+    artistId,
+    date,
+    durationHours,
+  )
 
-  if (blocked) {
-    return { available: false, reason: 'This date is blocked by the artist' }
+  if (reason) {
+    return { available: false, reason }
   }
 
-  // ── Step 2: Weekly availability ──
-  const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay()
-
-  const { data: availability } = await supabase
-    .from('artist_availability')
-    .select('id, start_time, end_time')
-    .eq('artist_id', artistId)
-    .eq('day_of_week', dayOfWeek)
-    .maybeSingle()
-
-  if (!availability) {
-    return { available: false, reason: 'The artist is not available on this day' }
+  // Date-level check: at least one consultation slot remains
+  if (!time) {
+    const hasOpenSlot = slots.some((s) => s.available)
+    return hasOpenSlot
+      ? { available: true, reason: null }
+      : { available: false, reason: 'No consultation slots available on this date' }
   }
 
-  // If a specific time was requested, check it falls within the availability window
-  if (time) {
-    const reqMinutes = timeToMinutes(time)
-    const startMinutes = timeToMinutes(availability.start_time)
-    const endMinutes = timeToMinutes(availability.end_time)
-
-    if (reqMinutes < startMinutes || reqMinutes >= endMinutes) {
-      return { available: false, reason: 'The requested time is outside the artist\'s available hours' }
-    }
+  // Time-level check: slot exists within hours and does not overlap
+  const matchingSlot = slots.find((s) => s.time === time)
+  if (!matchingSlot) {
+    return { available: false, reason: 'The requested time is outside available consultation hours' }
   }
 
-  // ── Step 3: Existing confirmed/deposit_paid bookings ──
-  const bookingQuery = supabase
-    .from('bookings')
-    .select('id')
-    .eq('artist_id', artistId)
-    .eq('booking_date', date)
-    .in('status', ['confirmed', 'deposit_paid'])
-    .is('deleted_at', null)
-
-  if (time) {
-    bookingQuery.eq('booking_time', time)
+  if (!matchingSlot.available) {
+    return { available: false, reason: 'This consultation slot is already booked' }
   }
 
-  const { data: existingBookings } = await bookingQuery
-
-  if (existingBookings && existingBookings.length > 0) {
-    return { available: false, reason: 'This slot is already booked' }
-  }
-
-  // ── Step 4: Active booking holds ──
-  const holdQuery = supabase
-    .from('booking_holds')
-    .select('id')
-    .eq('artist_id', artistId)
-    .eq('booking_date', date)
-    .gt('expires_at', new Date().toISOString())
-
-  if (time) {
-    holdQuery.eq('booking_time', time)
-  }
-
-  const { data: activeHolds } = await holdQuery
-
-  if (activeHolds && activeHolds.length > 0) {
-    return { available: false, reason: 'This slot is temporarily held by another client' }
-  }
-
-  // ── Step 5: Available ──
   return { available: true, reason: null }
 }
 
@@ -121,6 +70,7 @@ export async function createBookingHold(
   date: string,
   time: string | undefined,
   sessionId: string,
+  durationHours: number = CONSULTATION_DURATION_HOURS,
 ): Promise<HoldResult> {
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
@@ -132,6 +82,7 @@ export async function createBookingHold(
       booking_time: time ?? null,
       session_id: sessionId,
       expires_at: expiresAt,
+      duration_hours: durationHours,
     })
     .select('id, expires_at')
     .single()
@@ -147,8 +98,7 @@ export async function createBookingHold(
 }
 
 // ---------------------------------------------------------------------------
-// validateHold — checks that a hold exists, belongs to the session, and
-// hasn't expired
+// validateHold
 // ---------------------------------------------------------------------------
 
 export interface HoldValidation {
@@ -200,12 +150,7 @@ export async function validateHold(
 }
 
 // ---------------------------------------------------------------------------
-// isFullyBookedNext14Days — used to show the "Join Waitlist" prompt.
-//
-// Simplified single-slot-per-day model: a day counts as "open" if the artist
-// has a weekly availability window for that day-of-week and it isn't in
-// blocked_dates. The artist is considered fully booked if every open day in
-// the next 14 days already has a confirmed/deposit_paid booking.
+// isFullyBookedNext14Days — true when every open day has zero free slots
 // ---------------------------------------------------------------------------
 
 export async function isFullyBookedNext14Days(
@@ -220,45 +165,35 @@ export async function isFullyBookedNext14Days(
     dates.push(d.toISOString().slice(0, 10))
   }
 
-  const [{ data: availability }, { data: blocked }, { data: booked }] = await Promise.all([
+  const [{ data: availability }, { data: blocked }] = await Promise.all([
     supabase.from('artist_availability').select('day_of_week').eq('artist_id', artistId),
     supabase.from('blocked_dates').select('blocked_date').eq('artist_id', artistId).in('blocked_date', dates),
-    supabase
-      .from('bookings')
-      .select('booking_date')
-      .eq('artist_id', artistId)
-      .in('status', ['confirmed', 'deposit_paid'])
-      .is('deleted_at', null)
-      .in('booking_date', dates),
   ])
 
   const availableDaysOfWeek = new Set((availability ?? []).map((a) => a.day_of_week))
   const blockedDates = new Set((blocked ?? []).map((b) => b.blocked_date))
-  const bookedDates = new Set((booked ?? []).map((b) => b.booking_date))
 
   const openDays = dates.filter((date) => {
     const dayOfWeek = new Date(`${date}T12:00:00Z`).getUTCDay()
     return availableDaysOfWeek.has(dayOfWeek) && !blockedDates.has(date)
   })
 
-  if (openDays.length === 0) return false // no recurring availability set — don't claim "fully booked"
+  if (openDays.length === 0) return false
 
-  return openDays.every((date) => bookedDates.has(date))
+  for (const date of openDays) {
+    const { slots } = await getConsultationSlotsForDate(supabase, artistId, date)
+    if (slots.some((s) => s.available)) {
+      return false
+    }
+  }
+
+  return true
 }
 
 // ---------------------------------------------------------------------------
-// generateAccessToken — crypto-random token for client booking status lookup
+// generateAccessToken
 // ---------------------------------------------------------------------------
 
 export function generateAccessToken(): string {
   return randomBytes(32).toString('hex')
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function timeToMinutes(time: string): number {
-  const parts = time.slice(0, 5).split(':')
-  return Number(parts[0]) * 60 + Number(parts[1])
 }

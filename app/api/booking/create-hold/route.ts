@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { createHoldSchema } from '@/lib/validations/booking'
 import { isSlotAvailable, createBookingHold } from '@/lib/booking/availability'
+import { CONSULTATION_DURATION_HOURS } from '@/lib/constants'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let body: unknown
@@ -36,7 +37,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // Check availability before creating hold
-  const availability = await isSlotAvailable(supabase, artistId, date, time)
+  const availability = await isSlotAvailable(
+    supabase,
+    artistId,
+    date,
+    time,
+    CONSULTATION_DURATION_HOURS,
+  )
 
   if (!availability.available) {
     return NextResponse.json(
@@ -70,7 +77,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const hold = await createBookingHold(supabase, artistId, date, time, sessionId)
+    const hold = await createBookingHold(
+      supabase,
+      artistId,
+      date,
+      time,
+      sessionId,
+      CONSULTATION_DURATION_HOURS,
+    )
     return NextResponse.json({ ...hold, reused: false }, { status: 201 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create hold'

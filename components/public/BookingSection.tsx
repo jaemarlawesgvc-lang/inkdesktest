@@ -3,7 +3,12 @@
 import { useState, useRef, useCallback } from 'react'
 import { z } from 'zod'
 import { BookingCalendar } from '@/components/public/BookingCalendar'
+import { ConsultationTimeSlots } from '@/components/public/ConsultationTimeSlots'
 import { DepositPayment } from '@/components/public/DepositPayment'
+import {
+  CONSULTATION_DURATION_HOURS,
+  CONSULTATION_DURATION_LABEL,
+} from '@/lib/constants'
 
 interface BookingSectionProps {
   artistId: string
@@ -12,13 +17,12 @@ interface BookingSectionProps {
   accentColor: string
 }
 
-// Client-side form schema (mirrors server submitBookingSchema fields the form collects)
 const formSchema = z.object({
   clientName: z.string().min(1, 'Name is required').max(200),
   clientEmail: z.string().email('Enter a valid email address'),
   clientPhone: z.string().max(30).optional(),
   bookingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Select a date'),
-  bookingTime: z.string().regex(/^\d{2}:\d{2}$/, 'Select a time'),
+  bookingTime: z.string().regex(/^\d{2}:\d{2}$/, 'Select a consultation time'),
   description: z.string().max(2000).optional(),
 })
 
@@ -34,6 +38,24 @@ interface ReferenceUpload {
   storagePath: string | null
 }
 
+const CONSULTATION_STEPS = [
+  {
+    step: '1',
+    title: 'Book a consultation',
+    body: `Pick a ${CONSULTATION_DURATION_LABEL} slot to meet and discuss your tattoo idea.`,
+  },
+  {
+    step: '2',
+    title: 'Design & quote',
+    body: 'Talk through size, placement, style, and pricing. Share reference images if you have them.',
+  },
+  {
+    step: '3',
+    title: 'Schedule your session',
+    body: 'Your actual tattoo appointment is booked separately — duration depends on the piece.',
+  },
+] as const
+
 export function BookingSection({
   artistId,
   depositRequired,
@@ -45,7 +67,6 @@ export function BookingSection({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  // Form state
   const [clientName, setClientName] = useState('')
   const [clientEmail, setClientEmail] = useState('')
   const [clientPhone, setClientPhone] = useState('')
@@ -54,7 +75,6 @@ export function BookingSection({
   const [description, setDescription] = useState('')
   const [references, setReferences] = useState<ReferenceUpload[]>([])
 
-  // Flow state
   const [holdId, setHoldId] = useState<string | null>(null)
   const [, setBookingId] = useState<string | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
@@ -62,7 +82,6 @@ export function BookingSection({
   const sessionIdRef = useRef<string>(SESSION_KEY())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // ── Reference image upload ──
   const handleReferenceUpload = useCallback(
     async (files: FileList | null, activeHoldId: string) => {
       if (!files) return
@@ -99,7 +118,6 @@ export function BookingSection({
     [references.length],
   )
 
-  // Ensure a hold exists before uploading references (references are keyed by holdId)
   const ensureHold = useCallback(async (): Promise<string | null> => {
     if (holdId) return holdId
     if (!bookingDate || !bookingTime) return null
@@ -137,7 +155,6 @@ export function BookingSection({
     setReferences((prev) => prev.filter((r) => r.id !== id))
   }
 
-  // ── Submit ──
   const handleSubmit = async () => {
     setErrorMessage(null)
     setFieldErrors({})
@@ -163,14 +180,12 @@ export function BookingSection({
 
     setSubmitting(true)
 
-    // 1. Ensure hold
     const activeHoldId = await ensureHold()
     if (!activeHoldId) {
       setSubmitting(false)
       return
     }
 
-    // 2. Submit booking
     const referencePaths = references
       .filter((r) => r.status === 'done' && r.storagePath)
       .map((r) => r.storagePath as string)
@@ -188,6 +203,7 @@ export function BookingSection({
           clientPhone: parsed.data.clientPhone ?? '',
           bookingDate: parsed.data.bookingDate,
           bookingTime: parsed.data.bookingTime,
+          durationHours: CONSULTATION_DURATION_HOURS,
           description: parsed.data.description ?? '',
           referenceImagePaths: referencePaths,
         }),
@@ -211,7 +227,6 @@ export function BookingSection({
       setBookingId(json.bookingId)
       setAccessToken(json.accessToken ?? null)
 
-      // 3. Deposit path vs manual confirmation path
       if (json.requiresDeposit && json.accessToken) {
         const depRes = await fetch('/api/stripe/create-deposit', {
           method: 'POST',
@@ -238,7 +253,6 @@ export function BookingSection({
         return
       }
 
-      // No deposit required → manual confirmation path; booking is pending
       setStage('success')
       setSubmitting(false)
     } catch {
@@ -262,13 +276,25 @@ export function BookingSection({
     sessionIdRef.current = SESSION_KEY()
   }
 
-  const inputCls =
-    'w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/25 text-sm focus:outline-none focus:border-white/50 transition-colors'
+  const handleDateSelect = (d: string) => {
+    setBookingDate(d)
+    setBookingTime('')
+    setHoldId(null)
+  }
 
-  // ── Success screen ──
+  const handleTimeSelect = (t: string) => {
+    setBookingTime(t)
+    setHoldId(null)
+  }
+
+  const inputCls =
+    'w-full bg-white/5 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/25 text-base sm:text-sm focus:outline-none focus:border-white/50 transition-colors min-h-[48px]'
+
+  const sectionPad = 'px-4 sm:px-6 py-12 sm:py-20 pb-28 lg:pb-20'
+
   if (stage === 'success') {
     return (
-      <section id="book" className="px-6 py-16 sm:py-24" aria-label="Booking confirmation">
+      <section id="book" className={sectionPad} aria-label="Booking confirmation">
         <div className="max-w-md mx-auto text-center space-y-5">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
@@ -278,13 +304,13 @@ export function BookingSection({
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clipRule="evenodd" />
             </svg>
           </div>
-          <h2 className="font-serif text-3xl font-bold" style={{ color: '#f5f5f0' }}>
-            {depositRequired ? 'Booking confirmed' : 'Request received'}
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold" style={{ color: '#f5f5f0' }}>
+            {depositRequired ? 'Consultation confirmed' : 'Consultation request received'}
           </h2>
           <p className="text-white/55 text-base leading-relaxed">
             {depositRequired
-              ? 'Your deposit has been received and your booking is confirmed. A confirmation email is on its way.'
-              : 'Your booking request has been sent to the artist for confirmation. You will receive an email once it is confirmed.'}
+              ? `Your ${CONSULTATION_DURATION_LABEL} consultation is confirmed. A confirmation email is on its way. Your tattoo session will be scheduled after you meet.`
+              : `Your consultation request has been sent to the artist. You'll receive an email once it's confirmed. Remember — this is a ${CONSULTATION_DURATION_LABEL} consultation, not your tattoo session.`}
           </p>
           {accessToken && (
             <a
@@ -299,24 +325,23 @@ export function BookingSection({
     )
   }
 
-  // ── Error screen ──
   if (stage === 'error') {
     return (
-      <section id="book" className="px-6 py-16 sm:py-24" aria-label="Booking error">
+      <section id="book" className={sectionPad} aria-label="Booking error">
         <div className="max-w-md mx-auto text-center space-y-5">
           <div className="w-16 h-16 rounded-full bg-red-500/15 flex items-center justify-center mx-auto">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#f87171" className="w-8 h-8" aria-hidden="true">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
           </div>
-          <h2 className="font-serif text-3xl font-bold" style={{ color: '#f5f5f0' }}>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold" style={{ color: '#f5f5f0' }}>
             Something went wrong
           </h2>
           <p className="text-white/55 text-base">{errorMessage ?? 'Please try again.'}</p>
           <button
             type="button"
             onClick={resetFlow}
-            className="px-6 py-3 rounded-lg font-bold text-sm transition-all hover:brightness-110 active:scale-95"
+            className="px-6 py-3 rounded-lg font-bold text-sm transition-all hover:brightness-110 active:scale-95 min-h-[48px]"
             style={{ backgroundColor: accentColor, color: '#0a0a0a' }}
           >
             Try again
@@ -326,17 +351,16 @@ export function BookingSection({
     )
   }
 
-  // ── Payment screen ──
   if (stage === 'payment' && clientSecret && depositAmount !== null) {
     return (
-      <section id="book" className="px-6 py-16 sm:py-24" aria-label="Deposit payment">
+      <section id="book" className={sectionPad} aria-label="Deposit payment">
         <div className="max-w-md mx-auto space-y-6">
           <div className="text-center">
-            <h2 className="font-serif text-3xl font-bold" style={{ color: '#f5f5f0' }}>
-              Secure your booking
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold" style={{ color: '#f5f5f0' }}>
+              Secure your consultation
             </h2>
             <p className="text-white/55 text-sm mt-2">
-              A £{depositAmount.toFixed(2)} deposit confirms your appointment.
+              A £{depositAmount.toFixed(2)} deposit confirms your {CONSULTATION_DURATION_LABEL} consultation.
             </p>
           </div>
           <DepositPayment
@@ -351,25 +375,56 @@ export function BookingSection({
     )
   }
 
-  // ── Form screen ──
   return (
-    <section id="book" className="px-6 py-16 sm:py-24 bg-white/[0.02]" aria-label="Booking form">
+    <section id="book" className={`${sectionPad} bg-white/[0.02]`} aria-label="Book a consultation">
       <div className="max-w-lg mx-auto">
-        <h2 className="font-serif text-3xl sm:text-4xl font-bold mb-2 text-center" style={{ color: '#f5f5f0' }}>
-          Book a session
-        </h2>
-        <p className="text-white/50 text-sm text-center mb-2">
-          {depositRequired
-            ? 'A deposit is required to confirm your booking.'
-            : 'Submit a request and the artist will confirm your appointment.'}
-        </p>
+        <div className="text-center mb-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-2">
+            Appointments
+          </p>
+          <h2 className="font-serif text-2xl sm:text-4xl font-bold mb-3" style={{ color: '#f5f5f0' }}>
+            Book a consultation
+          </h2>
+          <p className="text-white/55 text-sm sm:text-base leading-relaxed max-w-md mx-auto">
+            {depositRequired
+              ? 'Reserve a consultation slot. A deposit secures your appointment.'
+              : 'Choose a consultation time — the artist will confirm your booking.'}
+          </p>
+        </div>
 
-        <p
-          className={['text-center text-base font-bold', depositRequired && depositAmount !== null ? 'mb-8' : 'mb-6'].join(' ')}
-          style={{ color: accentColor }}
-        >
-          {depositRequired && depositAmount !== null ? `Deposit due today: £${depositAmount.toFixed(2)}` : ' '}
-        </p>
+        {/* How it works */}
+        <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-white/80">How booking works</h3>
+          <ol className="space-y-3">
+            {CONSULTATION_STEPS.map((item) => (
+              <li key={item.step} className="flex gap-3">
+                <span
+                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{ backgroundColor: `${accentColor}25`, color: accentColor }}
+                >
+                  {item.step}
+                </span>
+                <div className="min-w-0 pt-0.5">
+                  <p className="text-sm font-medium text-white/85">{item.title}</p>
+                  <p className="text-xs text-white/45 mt-0.5 leading-relaxed">{item.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div
+            className="rounded-lg px-3 py-2.5 text-xs leading-relaxed border"
+            style={{ borderColor: `${accentColor}30`, backgroundColor: `${accentColor}10`, color: '#f5f5f0' }}
+          >
+            <strong className="font-semibold">Consultation length:</strong> {CONSULTATION_DURATION_LABEL}.
+            Your tattoo session may take 1–8+ hours depending on the piece — that gets scheduled after your consultation.
+          </div>
+        </div>
+
+        {depositRequired && depositAmount !== null && (
+          <p className="text-center text-base font-bold mb-6" style={{ color: accentColor }}>
+            Consultation deposit: £{depositAmount.toFixed(2)}
+          </p>
+        )}
 
         {errorMessage && (
           <div className="mb-6 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm" role="alert">
@@ -378,7 +433,6 @@ export function BookingSection({
         )}
 
         <div className="space-y-5">
-          {/* Name */}
           <div className="space-y-1.5">
             <label htmlFor="bk-name" className="block text-sm font-medium text-white/70">
               Name <span className="text-red-400" aria-hidden="true">*</span>
@@ -387,7 +441,6 @@ export function BookingSection({
             {fieldErrors.clientName && <p className="text-red-400 text-sm" role="alert">{fieldErrors.clientName}</p>}
           </div>
 
-          {/* Email */}
           <div className="space-y-1.5">
             <label htmlFor="bk-email" className="block text-sm font-medium text-white/70">
               Email <span className="text-red-400" aria-hidden="true">*</span>
@@ -396,44 +449,49 @@ export function BookingSection({
             {fieldErrors.clientEmail && <p className="text-red-400 text-sm" role="alert">{fieldErrors.clientEmail}</p>}
           </div>
 
-          {/* Phone */}
           <div className="space-y-1.5">
             <label htmlFor="bk-phone" className="block text-sm font-medium text-white/70">Phone</label>
             <input id="bk-phone" type="tel" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} className={inputCls} placeholder="Optional" autoComplete="tel" />
           </div>
 
-          {/* Date */}
           <div className="space-y-1.5">
             <span className="block text-sm font-medium text-white/70">
-              Preferred date <span className="text-red-400" aria-hidden="true">*</span>
+              Consultation date <span className="text-red-400" aria-hidden="true">*</span>
             </span>
-            <div className="bg-white/5 border border-white/20 rounded-lg p-4">
+            <div className="bg-white/5 border border-white/20 rounded-lg p-3 sm:p-4">
               <BookingCalendar
                 artistId={artistId}
                 selectedDate={bookingDate}
-                onDateSelect={(d) => { setBookingDate(d); setHoldId(null) }}
+                onDateSelect={handleDateSelect}
                 accentColor={accentColor}
               />
             </div>
             {fieldErrors.bookingDate && <p className="text-red-400 text-sm" role="alert">{fieldErrors.bookingDate}</p>}
           </div>
 
-          {/* Time */}
           <div className="space-y-1.5">
-            <label htmlFor="bk-time" className="block text-sm font-medium text-white/70">
-              Preferred time <span className="text-red-400" aria-hidden="true">*</span>
-            </label>
-            <input id="bk-time" type="time" value={bookingTime} onChange={(e) => { setBookingTime(e.target.value); setHoldId(null) }} className={`${inputCls} [color-scheme:dark]`} aria-required="true" />
+            <span className="block text-sm font-medium text-white/70">
+              Consultation time <span className="text-red-400" aria-hidden="true">*</span>
+            </span>
+            <div className="bg-white/5 border border-white/20 rounded-lg p-3 sm:p-4">
+              <ConsultationTimeSlots
+                artistId={artistId}
+                selectedDate={bookingDate}
+                selectedTime={bookingTime}
+                onTimeSelect={handleTimeSelect}
+                accentColor={accentColor}
+              />
+            </div>
             {fieldErrors.bookingTime && <p className="text-red-400 text-sm" role="alert">{fieldErrors.bookingTime}</p>}
           </div>
 
-          {/* Description */}
           <div className="space-y-1.5">
-            <label htmlFor="bk-desc" className="block text-sm font-medium text-white/70">Tattoo description</label>
-            <textarea id="bk-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} className={`${inputCls} resize-none`} placeholder="Describe your idea, size, placement…" maxLength={2000} />
+            <label htmlFor="bk-desc" className="block text-sm font-medium text-white/70">
+              Tell us about your tattoo idea
+            </label>
+            <textarea id="bk-desc" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} className={`${inputCls} resize-none min-h-[120px]`} placeholder="Describe your idea, size, placement, style…" maxLength={2000} />
           </div>
 
-          {/* Reference images */}
           <div className="space-y-2">
             <span className="block text-sm font-medium text-white/70">
               Reference images <span className="text-white/30">(up to {MAX_REFERENCES})</span>
@@ -443,7 +501,7 @@ export function BookingSection({
               onClick={() => void onReferenceButton()}
               disabled={references.length >= MAX_REFERENCES || !bookingDate || !bookingTime}
               title={!bookingDate || !bookingTime ? 'Select a date and time first' : undefined}
-              className="w-full py-3 rounded-lg border border-dashed border-white/25 text-white/50 text-sm hover:border-white/50 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-lg border border-dashed border-white/25 text-white/50 text-sm hover:border-white/50 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px]"
             >
               {references.length >= MAX_REFERENCES ? 'Maximum reached' : '+ Add reference images'}
             </button>
@@ -459,13 +517,13 @@ export function BookingSection({
             {references.length > 0 && (
               <ul className="space-y-1.5" aria-label="Uploaded references">
                 {references.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2 text-sm">
+                  <li key={r.id} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2 text-sm min-h-[44px]">
                     <span className="text-white/60 truncate flex-1">{r.name}</span>
-                    <span className="ml-3 flex items-center gap-2">
+                    <span className="ml-3 flex items-center gap-2 shrink-0">
                       {r.status === 'uploading' && <span className="text-white/30 text-xs">Uploading…</span>}
                       {r.status === 'done' && <span className="text-emerald-400 text-xs">Ready</span>}
                       {r.status === 'error' && <span className="text-red-400 text-xs">Failed</span>}
-                      <button type="button" onClick={() => removeReference(r.id)} aria-label={`Remove ${r.name}`} className="text-white/30 hover:text-white transition-colors">
+                      <button type="button" onClick={() => removeReference(r.id)} aria-label={`Remove ${r.name}`} className="text-white/30 hover:text-white transition-colors p-1">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
                           <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
@@ -477,15 +535,14 @@ export function BookingSection({
             )}
           </div>
 
-          {/* Submit */}
           <button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting}
-            className="w-full py-4 rounded-lg font-bold text-sm transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            className="w-full py-4 rounded-lg font-bold text-base sm:text-sm transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[52px]"
             style={{ backgroundColor: accentColor, color: '#0a0a0a', ['--tw-ring-color' as string]: accentColor }}
           >
-            {submitting ? 'Processing…' : depositRequired ? 'Continue to deposit' : 'Request booking'}
+            {submitting ? 'Processing…' : depositRequired ? 'Continue to deposit' : 'Request consultation'}
           </button>
         </div>
       </div>

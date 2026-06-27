@@ -141,7 +141,7 @@ export function BookingCalendar({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1" role="grid" aria-label="Available dates">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1" role="grid" aria-label="Available dates">
         {cells.map((day, i) => {
           if (day === null) {
             return <div key={`empty-${i}`} className="aspect-square" aria-hidden="true" />
@@ -163,7 +163,7 @@ export function BookingCalendar({
               aria-label={`${cellDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}${available ? '' : ' — unavailable'}`}
               aria-pressed={isSelected}
               className={[
-                'aspect-square rounded-lg text-sm font-medium flex items-center justify-center transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white',
+                'aspect-square rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white min-h-[36px] sm:min-h-0',
                 isSelected
                   ? 'font-bold'
                   : available

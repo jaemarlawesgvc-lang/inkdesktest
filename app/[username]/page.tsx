@@ -125,7 +125,7 @@ export async function generateMetadata({
   const description =
     site.seoDescription ??
     artist.bio ??
-    `Book a tattoo session with ${name}. View portfolio and availability.`
+    `Book a consultation with ${name}. View portfolio and availability.`
   const canonical = `${clientEnv.appUrl}/${artist.username}`
   const ogImage = artist.portfolio_images
     ?.slice()
@@ -208,7 +208,7 @@ export default async function ArtistPage({
   const heroSub =
     site.hero?.subheadline ??
     (styleTags.length > 0 ? styleTags.join(' · ') : 'Custom tattoos by appointment')
-  const heroCta = site.hero?.ctaText ?? 'Book Now'
+  const heroCta = site.hero?.ctaText ?? 'Book Consultation'
 
   const aboutTitle = site.about?.title ?? 'About'
   const aboutBody = site.about?.body ?? artist.bio ?? ''

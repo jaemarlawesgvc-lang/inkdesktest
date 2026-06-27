@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { submitBookingSchema } from '@/lib/validations/booking'
 import { validateHold } from '@/lib/booking/availability'
+import { CONSULTATION_DURATION_HOURS } from '@/lib/constants'
 import { resolveActivePlan, checkBooleanFeature } from '@/lib/stripe/plans'
 import { loadBookingWithArtist, sendBookingPending, sendArtistNotification } from '@/lib/resend/send'
 
@@ -188,9 +189,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       client_phone: clientPhone || null,
       booking_date: bookingDate,
       booking_time: bookingTime ?? null,
-      // duration_hours is NOT NULL and the public form doesn't collect it —
-      // default to a 1-hour slot rather than inserting null.
-      duration_hours: durationHours ?? 1,
+      // Public bookings are consultations (~30 min). Tattoo sessions are
+      // scheduled separately by the artist after the consultation.
+      duration_hours: durationHours ?? CONSULTATION_DURATION_HOURS,
       description: safeDescription,
       // Correct column is reference_image_paths (text[] NOT NULL, default {}).
       // Always pass the array — never null or the old `reference_images` name.

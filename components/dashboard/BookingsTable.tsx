@@ -4,6 +4,7 @@ import { useRef, useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Plan } from '@/lib/stripe/plans'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { formatBookingDuration } from '@/lib/booking/consultation-slots'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -365,7 +366,7 @@ export function BookingsTable({ bookings, artistId, plan }: BookingsTableProps) 
                         {booking.duration_hours && (
                           <div>
                             <p className="text-xs text-white/30 uppercase tracking-wider mb-0.5">Duration</p>
-                            <p className="text-white text-sm">{booking.duration_hours}h</p>
+                            <p className="text-white text-sm">{formatBookingDuration(booking.duration_hours)}</p>
                           </div>
                         )}
                         <div>

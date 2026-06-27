@@ -35,7 +35,7 @@ export function StickyBookCta({ accentColor, ctaText, artistName }: StickyBookCt
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white">{artistName}</p>
-          <p className="text-xs text-white/45">Spots are limited</p>
+          <p className="text-xs text-white/45">Book a consultation</p>
         </div>
         <a
           href="#book"
