@@ -195,7 +195,35 @@ export type Step4Values = z.infer<typeof step4Schema>
 // ---------------------------------------------------------------------------
 
 export const step5Schema = z.object({
-  zoomLink: z.string().max(2048).trim().nullable().optional(),
+  zoomLink: z
+    .string()
+    .max(2048)
+    .trim()
+    .refine(
+      (val) => {
+        if (!val || val === '') return true
+        try {
+          const url = new URL(val)
+          return (
+            url.protocol === 'https:' &&
+            (url.hostname === 'zoom.us' ||
+              url.hostname.endsWith('.zoom.us') ||
+              url.hostname === 'us02web.zoom.us' ||
+              url.hostname === 'us04web.zoom.us' ||
+              url.hostname === 'us05web.zoom.us' ||
+              url.hostname === 'us06web.zoom.us')
+          )
+        } catch {
+          return false
+        }
+      },
+      {
+        message:
+          'Please enter a valid Zoom link (e.g. https://zoom.us/j/1234567890 or https://us02web.zoom.us/j/1234567890)',
+      },
+    )
+    .nullable()
+    .optional(),
 })
 
 export type Step5Values = z.infer<typeof step5Schema>

@@ -144,7 +144,83 @@ export function Step5Zoom({ defaultValue, onNext, onBack, isSaving }: Step5Props
       </div>
 
       <div className="space-y-4">
-        {/* Step-by-step Zoom instructions */}
+        {/* Visual Guide — Annotated Zoom Settings mockup */}
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+          <h3 className="font-semibold text-white flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gold-400">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            Where to find your Zoom link
+          </h3>
+
+          {/* Annotated mockup of zoom.us/profile */}
+          <div className="rounded-lg border border-white/10 bg-zinc-950 overflow-hidden">
+            {/* Browser bar */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 bg-zinc-900">
+              <div className="flex gap-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60" />
+              </div>
+              <div className="flex-1 bg-white/5 rounded px-2 py-0.5 text-[10px] text-white/50 font-mono">
+                https://zoom.us/profile
+              </div>
+            </div>
+
+            {/* Simulated Zoom profile page */}
+            <div className="p-4 space-y-3">
+              {/* Zoom sidebar + content */}
+              <div className="flex gap-4">
+                {/* Sidebar */}
+                <div className="hidden sm:block w-28 space-y-1.5 border-r border-white/5 pr-3">
+                  <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider mb-2">Zoom</div>
+                  <div className="text-[10px] text-white/30 py-0.5">Home</div>
+                  <div className="text-[10px] text-white/80 py-0.5 px-1.5 bg-blue-500/10 rounded font-medium">Profile</div>
+                  <div className="text-[10px] text-white/30 py-0.5">Meetings</div>
+                  <div className="text-[10px] text-white/30 py-0.5">Settings</div>
+                </div>
+
+                {/* Main content */}
+                <div className="flex-1 space-y-3">
+                  <div className="text-xs font-semibold text-white/70">Profile</div>
+                  
+                  {/* Fake profile fields */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-white/30 w-20 shrink-0">Display Name</span>
+                      <span className="text-[10px] text-white/60">Your Name</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-white/30 w-20 shrink-0">Email</span>
+                      <span className="text-[10px] text-white/60">you@email.com</span>
+                    </div>
+                    
+                    {/* PMI — THE IMPORTANT ONE */}
+                    <div className="flex items-center gap-2 relative">
+                      <span className="text-[10px] text-white/30 w-20 shrink-0">Personal Meeting ID</span>
+                      <span className="text-[10px] text-blue-400 font-mono underline">123 456 7890</span>
+                    </div>
+
+                    {/* THE TARGET FIELD — highlighted */}
+                    <div className="flex items-start gap-2 relative -mx-1.5 px-1.5 py-1.5 rounded-lg border-2 border-dashed border-gold-500/60 bg-gold-500/5">
+                      <div className="absolute -top-2.5 -right-1 bg-gold-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider">
+                        ← Copy this link!
+                      </div>
+                      <span className="text-[10px] text-white/30 w-20 shrink-0">Personal Link</span>
+                      <span className="text-[10px] text-blue-400 font-mono underline break-all">https://zoom.us/j/1234567890</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p className="text-[11px] text-white/30 leading-relaxed">
+            Log in at <strong className="text-white/50">zoom.us</strong> → Click <strong className="text-white/50">Profile</strong> on the left sidebar → 
+            Find <strong className="text-gold-400">&quot;Personal Link&quot;</strong> or <strong className="text-gold-400">&quot;Personal Meeting ID&quot;</strong> → Copy the full URL.
+          </p>
+        </div>
+
+        {/* Step-by-step instructions */}
         <div className="rounded-xl border border-white/5 bg-white/[0.02] p-5 space-y-3 text-sm">
           <h3 className="font-semibold text-white">How to set up video consultations for free</h3>
           <ol className="list-decimal pl-5 space-y-2.5 text-parchment-350 leading-relaxed">
@@ -160,17 +236,32 @@ export function Step5Zoom({ defaultValue, onNext, onBack, isSaving }: Step5Props
               </a>.
             </li>
             <li>
-              Log in to your Zoom account and open your **Profile** or **Settings**.
+              Once signed up, go to{' '}
+              <a
+                href="https://zoom.us/profile"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold-400 hover:text-gold-300 font-medium underline underline-offset-2 transition-colors"
+              >
+                zoom.us/profile
+              </a>{' '}
+              (or click <strong className="text-white/80">Profile</strong> on the left sidebar).
             </li>
             <li>
-              Locate your **Personal Meeting ID (PMI) Link** (a permanent link like `https://zoom.us/j/1234567890` or `https://zoom.us/my/yourname`).
+              Find the row labelled <strong className="text-gold-400">&quot;Personal Link&quot;</strong>. It looks like: <code className="text-xs bg-white/5 px-1.5 py-0.5 rounded text-blue-400">https://zoom.us/j/1234567890</code>
             </li>
             <li>
-              Copy that link and paste it in the field below. Inkquire will automatically add this link to all consultation calendar invites and confirmation emails for your clients.
+              Copy that <strong className="text-white/80">full link</strong> (not just the meeting ID number) and paste it below.
             </li>
           </ol>
 
-          <div className="pt-2 flex justify-start">
+          {/* Common mistake warning */}
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-300 leading-relaxed">
+            <strong>⚠️ Common mistake:</strong> Don&apos;t paste just the meeting ID number (e.g. <code className="bg-white/5 px-1 rounded">1234567890</code>). 
+            Paste the <strong>full URL</strong> starting with <code className="bg-white/5 px-1 rounded">https://zoom.us/...</code>
+          </div>
+
+          <div className="pt-2 flex justify-start gap-2">
             <a
               href="https://zoom.us/signup"
               target="_blank"
@@ -178,6 +269,14 @@ export function Step5Zoom({ defaultValue, onNext, onBack, isSaving }: Step5Props
               className="inline-flex items-center justify-center gap-2 rounded bg-gold-500/10 border border-gold-500/20 px-3.5 py-2 text-xs font-semibold text-gold-400 hover:bg-gold-500/20 transition-all active:scale-[0.98]"
             >
               Open Zoom Signup Page ↗
+            </a>
+            <a
+              href="https://zoom.us/profile"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded bg-white/5 border border-white/10 px-3.5 py-2 text-xs font-semibold text-white/70 hover:bg-white/10 transition-all active:scale-[0.98]"
+            >
+              Go to Zoom Profile ↗
             </a>
           </div>
         </div>
