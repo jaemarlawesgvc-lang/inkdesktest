@@ -6,6 +6,7 @@ import {
   saveStep2Payload,
   saveStep3Payload,
   saveStep4Payload,
+  saveStep5Payload,
 } from '@/lib/validations/onboarding'
 import { z } from 'zod'
 
@@ -14,6 +15,7 @@ const stepNumberSchema = z.union([
   z.literal(2),
   z.literal(3),
   z.literal(4),
+  z.literal(5),
 ])
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -297,6 +299,35 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             { status: 500 },
           )
         }
+      }
+
+      return NextResponse.json({ ok: true })
+    }
+
+    case 5: {
+      const parsed = saveStep5Payload.safeParse(payload)
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: parsed.error.errors[0]?.message ?? 'Validation failed' },
+          { status: 422 },
+        )
+      }
+
+      const { error: updateError } = await db
+        .from('artists')
+        .update({
+          zoom_link: parsed.data.zoomLink || null,
+          onboarding_step: 6,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', artist.id)
+
+      if (updateError) {
+        console.error('[save-step/5] update error:', updateError.message)
+        return NextResponse.json(
+          { error: 'Failed to save Zoom details' },
+          { status: 500 },
+        )
       }
 
       return NextResponse.json({ ok: true })

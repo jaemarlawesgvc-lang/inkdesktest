@@ -43,7 +43,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { data: artist, error: artistError } = await supabase
     .from('artists')
     .select(
-      'id, user_id, deposit_required, deposit_amount, onboarding_complete',
+      'id, user_id, deposit_required, deposit_amount, onboarding_complete, zoom_link',
     )
     .eq('id', artistId)
     .is('deleted_at', null)
@@ -199,6 +199,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status: initialStatus,
       deposit_amount: depositActive ? artist.deposit_amount : null,
       deposit_paid: false,
+      zoom_link: artist.zoom_link || null,
       // access_token is a NOT NULL uuid with a DB default. The old code inserted
       // a 64-char hex string, which is invalid uuid syntax and failed every
       // insert — let Postgres generate it and read it back for the status link.

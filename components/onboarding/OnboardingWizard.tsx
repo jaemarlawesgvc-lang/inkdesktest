@@ -8,6 +8,7 @@ import { Step1Username } from '@/components/onboarding/Step1Username'
 import { Step2Profile } from '@/components/onboarding/Step2Profile'
 import { Step3Portfolio } from '@/components/onboarding/Step3Portfolio'
 import { Step4Pricing } from '@/components/onboarding/Step4Pricing'
+import { Step5Zoom } from '@/components/onboarding/Step5Zoom'
 import { Step5GenerateSite } from '@/components/onboarding/Step5GenerateSite'
 import type {
   Step1Values,
@@ -35,6 +36,7 @@ interface ArtistData {
   onboardingStep: number
   portfolioImages: PortfolioImageMeta[]
   availabilitySlots: { dayOfWeek: number; startTime: string; endTime: string }[]
+  zoomLink: string | null
 }
 
 interface OnboardingWizardProps {
@@ -50,6 +52,7 @@ const STEP_META = [
   { label: 'Profile', blurb: 'Introduce your craft' },
   { label: 'Portfolio', blurb: 'Show your best work' },
   { label: 'Pricing', blurb: 'Rates & availability' },
+  { label: 'Zoom Setup', blurb: 'Video consultations' },
   { label: 'Go Live', blurb: 'Generate your site' },
 ] as const
 
@@ -190,6 +193,10 @@ export function OnboardingWizard({ artist }: OnboardingWizardProps) {
     await withSave(4, data, (d) => d)
   }
 
+  const handleStep5 = async (data: { zoomLink: string | null }) => {
+    await withSave(5, data, (d) => d)
+  }
+
   const handleComplete = () => {
     router.push('/dashboard')
     router.refresh()
@@ -324,6 +331,15 @@ export function OnboardingWizard({ artist }: OnboardingWizardProps) {
                 )}
 
                 {currentStep === 5 && (
+                  <Step5Zoom
+                    defaultValue={artist.zoomLink ?? ''}
+                    onNext={handleStep5}
+                    onBack={goBack}
+                    isSaving={isSaving}
+                  />
+                )}
+
+                {currentStep === 6 && (
                   <Step5GenerateSite onComplete={handleComplete} onBack={goBack} />
                 )}
               </div>

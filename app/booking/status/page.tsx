@@ -3,9 +3,13 @@
 import { useSearchParams } from 'next/navigation'
 import { useState, useEffect, Suspense } from 'react'
 import { DepositPayment } from '@/components/public/DepositPayment'
+import { ZoomCountdown } from '@/components/public/ZoomCountdown'
+import { BookingCalendar } from '@/components/public/BookingCalendar'
+import { ConsultationTimeSlots } from '@/components/public/ConsultationTimeSlots'
 
 interface BookingInfo {
   bookingId: string
+  artistId: string
   status: string
   bookingDate: string
   bookingTime: string | null
@@ -14,6 +18,8 @@ interface BookingInfo {
   depositPaid: boolean
   paymentStatus: string | null
   createdAt: string
+  zoomLink: string | null
+  durationHours: number
   artist: {
     displayName: string | null
     username: string | null
@@ -64,6 +70,51 @@ function BookingStatusContent() {
   const [loadingSecret, setLoadingSecret] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+
+  // Reschedule state
+  const [rescheduleOpen, setRescheduleOpen] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState<string | null>(null)
+  const [rescheduleTime, setRescheduleTime] = useState<string | null>(null)
+  const [rescheduling, setRescheduling] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null)
+  const [rescheduleSuccess, setRescheduleSuccess] = useState(false)
+
+  const handleRescheduleSubmit = async () => {
+    if (!rescheduleDate || !rescheduleTime || !booking) return
+    setRescheduling(true)
+    setRescheduleError(null)
+
+    try {
+      const res = await fetch('/api/booking/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.bookingId,
+          date: rescheduleDate,
+          time: rescheduleTime,
+          token,
+        }),
+      })
+
+      const json = await res.json() as { error?: string }
+      if (!res.ok) {
+        throw new Error(json.error ?? 'Reschedule failed.')
+      }
+
+      setRescheduleSuccess(true)
+      setTimeout(() => {
+        setRescheduleOpen(false)
+        setRescheduleDate(null)
+        setRescheduleTime(null)
+        setRescheduleSuccess(false)
+        void fetchStatus()
+      }, 2000)
+    } catch (err) {
+      setRescheduleError(err instanceof Error ? err.message : 'Something went wrong.')
+    } finally {
+      setRescheduling(false)
+    }
+  }
 
   const fetchStatus = async () => {
     if (!token) {
@@ -251,6 +302,121 @@ function BookingStatusContent() {
           {paymentSuccess && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm p-4 rounded-xl text-center font-medium">
               Deposit paid successfully! Awaiting artist confirmation.
+            </div>
+          )}
+
+          {/* Zoom Countdown Integration */}
+          {booking.zoomLink && (
+            <div className="border-t border-white/5 pt-6">
+              <ZoomCountdown
+                bookingDate={booking.bookingDate}
+                bookingTime={booking.bookingTime}
+                durationHours={booking.durationHours}
+                zoomLink={booking.zoomLink}
+              />
+            </div>
+          )}
+
+          {/* Reschedule Consultation Section */}
+          {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+            <div className="border-t border-white/5 pt-6 space-y-4">
+              {!rescheduleOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setRescheduleOpen(true)}
+                  className="w-full py-2.5 px-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                  </svg>
+                  Reschedule Consultation
+                </button>
+              ) : (
+                <div className="space-y-4 bg-white/[0.02] border border-white/5 rounded-xl p-4 sm:p-5">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                    <h3 className="text-sm font-semibold">Reschedule Appointment</h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRescheduleOpen(false)
+                        setRescheduleDate(null)
+                        setRescheduleTime(null)
+                        setRescheduleError(null)
+                      }}
+                      className="text-xs text-white/40 hover:text-white/70"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-semibold text-white/50 uppercase tracking-widest">
+                        1. Select New Date
+                      </span>
+                      <div className="bg-zinc-950 border border-white/10 rounded-lg p-2">
+                        <BookingCalendar
+                          artistId={booking.artistId}
+                          selectedDate={rescheduleDate}
+                          onDateSelect={(date) => {
+                            setRescheduleDate(date)
+                            setRescheduleTime(null)
+                            setRescheduleError(null)
+                          }}
+                          accentColor="#ffb700"
+                        />
+                      </div>
+                    </div>
+
+                    {rescheduleDate && (
+                      <div className="space-y-1.5">
+                        <span className="block text-xs font-semibold text-white/50 uppercase tracking-widest">
+                          2. Select New Time
+                        </span>
+                        <div className="bg-zinc-950 border border-white/10 rounded-lg p-2">
+                          <ConsultationTimeSlots
+                            artistId={booking.artistId}
+                            selectedDate={rescheduleDate}
+                            selectedTime={rescheduleTime}
+                            onTimeSelect={(time) => {
+                              setRescheduleTime(time)
+                              setRescheduleError(null)
+                            }}
+                            accentColor="#ffb700"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {rescheduleError && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg">
+                      {rescheduleError}
+                    </div>
+                  )}
+
+                  {rescheduleSuccess && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-lg text-center font-medium">
+                      Rescheduled successfully! Updating page...
+                    </div>
+                  )}
+
+                  {rescheduleDate && rescheduleTime && !rescheduleSuccess && (
+                    <button
+                      type="button"
+                      disabled={rescheduling}
+                      onClick={handleRescheduleSubmit}
+                      className="w-full py-2.5 px-4 bg-gold-500 hover:bg-gold-400 disabled:bg-zinc-800 disabled:text-white/30 text-black text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-[0.98]"
+                    >
+                      {rescheduling ? (
+                        <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                      ) : (
+                        'Confirm Reschedule'
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

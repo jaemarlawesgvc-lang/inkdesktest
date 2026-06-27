@@ -88,6 +88,7 @@ export interface BookingEmailData {
   aftercareGuideUrl: string | null
   artistEmail: string | null
   messageClientUrl?: string | null
+  zoomLink?: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -679,3 +680,47 @@ ${data.statusUrl ? `<a href="${data.statusUrl}" style="display:inline-block;padd
     html: layout(content, data.artistEmail ?? undefined),
   }
 }
+
+// ---------------------------------------------------------------------------
+// 19. Booking Rescheduled — to client & artist
+// ---------------------------------------------------------------------------
+
+export function bookingRescheduledTemplate(data: BookingEmailData) {
+  const dateDisplay = formatDate(data.bookingDate)
+  const timeDisplay = data.bookingTime ? `, at ${formatTime(data.bookingTime)}` : ''
+
+  const zoomLine = data.zoomLink
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-bottom:24px;">
+<tr>
+  <td style="color:#ffffff;font-size:14px;font-weight:600;padding-bottom:8px;">Zoom Consultation Meeting</td>
+</tr>
+<tr>
+  <td style="color:#94a3b8;font-size:13px;padding-bottom:12px;line-height:1.4;">Your consultation will take place online via Zoom. Click the button below to join the meeting at the scheduled time.</td>
+</tr>
+<tr>
+  <td><a href="${data.zoomLink}" style="display:inline-block;padding:10px 20px;background-color:#2563eb;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;border-radius:6px;">Join Zoom Meeting</a></td>
+</tr>
+</table>`
+    : ''
+
+  const content = `
+<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">Appointment rescheduled</h1>
+<p style="margin:0 0 24px;font-size:15px;color:#a3a3a3;line-height:1.5;">
+  Hi ${esc(data.clientName)}, your appointment with <strong style="color:#ffffff;">${esc(data.artistName)}</strong> has been rescheduled to a new time.
+</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#262626;border-radius:8px;padding:16px;margin-bottom:24px;">
+<tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">New Date</td>
+    <td style="padding:8px 0;color:#ffffff;font-size:14px;text-align:right;">${dateDisplay}${timeDisplay}</td></tr>
+</table>
+${zoomLine}
+<p style="margin:0 0 24px;font-size:14px;color:#a3a3a3;line-height:1.5;">
+  If you need to make further changes, you can manage your appointment details on your booking status page.
+</p>
+${data.statusUrl ? `<a href="${data.statusUrl}" style="display:inline-block;padding:12px 24px;background-color:#ffffff;color:#000000;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">View Booking Status</a>` : ''}`
+
+  return {
+    subject: `Rescheduled: Your booking with ${data.artistName}`,
+    html: layout(content, data.artistEmail ?? undefined),
+  }
+}
+

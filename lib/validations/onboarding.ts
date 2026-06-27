@@ -191,14 +191,24 @@ export const step4Schema = z
 export type Step4Values = z.infer<typeof step4Schema>
 
 // ---------------------------------------------------------------------------
-// Step 5 — Generate Site (no user input; just triggers generation)
+// Step 5 — Zoom Setup
 // ---------------------------------------------------------------------------
 
 export const step5Schema = z.object({
-  siteGenerated: z.boolean(),
+  zoomLink: z.string().max(2048).trim().nullable().optional(),
 })
 
 export type Step5Values = z.infer<typeof step5Schema>
+
+// ---------------------------------------------------------------------------
+// Step 6 — Generate Site (no user input; just triggers generation)
+// ---------------------------------------------------------------------------
+
+export const step6Schema = z.object({
+  siteGenerated: z.boolean(),
+})
+
+export type Step6Values = z.infer<typeof step6Schema>
 
 // ---------------------------------------------------------------------------
 // Combined save-step API payload schemas
@@ -208,8 +218,10 @@ export const saveStep1Payload = step1Schema
 export const saveStep2Payload = step2Schema
 export const saveStep3Payload = step3Schema
 export const saveStep4Payload = step4Schema
+export const saveStep5Payload = step5Schema
 
 export type SaveStep1Payload = z.infer<typeof saveStep1Payload>
 export type SaveStep2Payload = z.infer<typeof saveStep2Payload>
 export type SaveStep3Payload = z.infer<typeof saveStep3Payload>
 export type SaveStep4Payload = z.infer<typeof saveStep4Payload>
+export type SaveStep5Payload = z.infer<typeof saveStep5Payload>

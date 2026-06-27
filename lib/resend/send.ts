@@ -15,6 +15,7 @@ import {
   cancellationOpeningTemplate,
   newMessageNotificationTemplate,
   conversationInviteTemplate,
+  bookingRescheduledTemplate,
   type BookingEmailData,
 } from '@/lib/resend/templates'
 import { getAppUrl } from '@/lib/app-url'
@@ -39,6 +40,7 @@ export interface BookingWithArtist {
   studioName: string | null
   studioAddress: string | null
   accessToken: string | null
+  zoomLink: string | null
 }
 
 function buildEmailData(
@@ -73,6 +75,7 @@ function buildEmailData(
     messageClientUrl: opts.includeDashboardUrl
       ? `${appUrl}/dashboard/messages?bookingId=${booking.bookingId}`
       : null,
+    zoomLink: booking.zoomLink,
   }
 }
 
@@ -501,6 +504,7 @@ export async function loadBookingWithArtist(
       deposit_paid,
       description,
       access_token,
+      zoom_link,
       artists (
         user_id,
         display_name,
@@ -544,5 +548,47 @@ export async function loadBookingWithArtist(
     studioName: artist.studio_name,
     studioAddress: artist.studio_address,
     accessToken: booking.access_token,
+    zoomLink: booking.zoom_link,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 19. Send Booking Rescheduled Notification
+// ---------------------------------------------------------------------------
+
+export async function sendBookingRescheduled(
+  supabase: SupabaseClient,
+  booking: BookingWithArtist,
+): Promise<SendResult> {
+  const data = buildEmailData(booking, {
+    includeDashboardUrl: false,
+    includeStatusUrl: true,
+    includeConsentFormUrl: false,
+    includeAftercareGuideUrl: false,
+  })
+
+  const { subject, html } = bookingRescheduledTemplate(data)
+
+  // Send to client
+  const clientRes = await sendEmail(supabase, {
+    to: booking.clientEmail,
+    subject,
+    html,
+    bookingId: booking.bookingId,
+    emailType: 'booking_rescheduled',
+  })
+
+  // Send to artist
+  const artistRes = await sendEmail(supabase, {
+    to: booking.artistEmail,
+    subject: `Rescheduled: Consultation with ${booking.clientName}`,
+    html,
+    bookingId: booking.bookingId,
+    emailType: 'booking_rescheduled',
+  })
+
+  return {
+    success: clientRes.success && artistRes.success,
+    error: clientRes.error || artistRes.error || null,
   }
 }

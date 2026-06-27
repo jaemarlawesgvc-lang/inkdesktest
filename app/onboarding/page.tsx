@@ -64,6 +64,7 @@ export default async function OnboardingPage() {
       onboarding_complete,
       onboarding_step,
       timezone,
+      zoom_link,
       portfolio_images (
         storage_path,
         public_url,
@@ -151,6 +152,7 @@ export default async function OnboardingPage() {
     onboardingComplete: typedArtist.onboarding_complete,
     portfolioImages,
     availabilitySlots,
+    zoomLink: typedArtist.zoom_link ?? null,
   }
 
   console.log('[onboarding] artist row OK', {

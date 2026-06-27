@@ -57,7 +57,8 @@ export default async function BookingsPage() {
       stripe_payment_status,
       created_at,
       booking_type,
-      total_amount
+      total_amount,
+      zoom_link
     `,
     )
     .eq('artist_id', artist.id)
@@ -117,6 +118,7 @@ export default async function BookingsPage() {
       review: reviewsByBooking[id] ?? null,
       booking_type: (row.booking_type as string) ?? 'consultation',
       total_amount: (row.total_amount as number | null) ?? null,
+      zoom_link: (row.zoom_link as string | null) ?? null,
     }
   })
 

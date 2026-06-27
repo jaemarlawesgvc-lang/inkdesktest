@@ -26,6 +26,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       id,
       booking_date,
       booking_time,
+      duration_hours,
+      zoom_link,
       status,
       deposit_amount,
       deposit_paid,
@@ -59,6 +61,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({
     bookingId: booking.id,
+    artistId: booking.artist_id,
     status: booking.status,
     bookingDate: booking.booking_date,
     bookingTime: booking.booking_time,
@@ -67,6 +70,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     depositPaid: booking.deposit_paid,
     paymentStatus: booking.stripe_payment_status,
     createdAt: booking.created_at,
+    zoomLink: booking.zoom_link,
+    durationHours: booking.duration_hours,
     artist: artist
       ? {
           displayName: artist.display_name,

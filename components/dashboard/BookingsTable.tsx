@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import type { Plan } from '@/lib/stripe/plans'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { formatBookingDuration } from '@/lib/booking/consultation-slots'
+import { ZoomCountdown } from '@/components/public/ZoomCountdown'
+import { BookingCalendar } from '@/components/public/BookingCalendar'
+import { ConsultationTimeSlots } from '@/components/public/ConsultationTimeSlots'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +32,7 @@ interface Booking {
   review: { id: string; rating: number | null; flagged: boolean } | null
   booking_type: string
   total_amount: number | null
+  zoom_link: string | null
 }
 
 interface BookingsTableProps {
@@ -102,6 +106,45 @@ export function BookingsTable({ bookings, artistId, plan }: BookingsTableProps) 
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Reschedule state
+  const [reschedulingBooking, setReschedulingBooking] = useState<Booking | null>(null)
+  const [rescheduleDate, setRescheduleDate] = useState<string | null>(null)
+  const [rescheduleTime, setRescheduleTime] = useState<string | null>(null)
+  const [rescheduling, setRescheduling] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null)
+
+  const handleRescheduleSubmit = async () => {
+    if (!reschedulingBooking || !rescheduleDate || !rescheduleTime) return
+    setRescheduling(true)
+    setRescheduleError(null)
+
+    try {
+      const res = await fetch('/api/booking/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: reschedulingBooking.id,
+          date: rescheduleDate,
+          time: rescheduleTime,
+        }),
+      })
+
+      const json = await res.json() as { error?: string }
+      if (!res.ok) {
+        throw new Error(json.error ?? 'Reschedule failed.')
+      }
+
+      setReschedulingBooking(null)
+      setRescheduleDate(null)
+      setRescheduleTime(null)
+      startTransition(() => router.refresh())
+    } catch (err) {
+      setRescheduleError(err instanceof Error ? err.message : 'Something went wrong.')
+    } finally {
+      setRescheduling(false)
+    }
+  }
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
@@ -444,6 +487,18 @@ export function BookingsTable({ bookings, artistId, plan }: BookingsTableProps) 
                         )}
                       </div>
 
+                      {/* Zoom Countdown */}
+                      {booking.zoom_link && (
+                        <div className="py-2 col-span-2 sm:col-span-3">
+                          <ZoomCountdown
+                            bookingDate={booking.booking_date}
+                            bookingTime={booking.booking_time}
+                            durationHours={booking.duration_hours ?? 0.5}
+                            zoomLink={booking.zoom_link}
+                          />
+                        </div>
+                      )}
+
                       {/* Description */}
                       {booking.description && (
                         <div>
@@ -617,6 +672,21 @@ export function BookingsTable({ bookings, artistId, plan }: BookingsTableProps) 
                           <button
                             type="button"
                             onClick={() => {
+                              setReschedulingBooking(booking)
+                              setRescheduleDate(booking.booking_date)
+                              setRescheduleTime(booking.booking_time ? booking.booking_time.slice(0, 5) : '')
+                              setRescheduleError(null)
+                            }}
+                            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            Reschedule
+                          </button>
+                        )}
+
+                        {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                          <button
+                            type="button"
+                            onClick={() => {
                               if (window.confirm(`Cancel booking for ${booking.client_name}?`)) {
                                 void performAction(booking.id, 'cancel')
                               }
@@ -781,6 +851,80 @@ export function BookingsTable({ bookings, artistId, plan }: BookingsTableProps) 
               >
                 {isUpgrading ? 'Upgrading…' : 'Upgrade to Live Booking'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Modal Overlay */}
+      {reschedulingBooking && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300" role="dialog" aria-modal="true" aria-labelledby="reschedule-title">
+          <div className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-2xl p-6 space-y-4 shadow-xl text-left overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between">
+              <h3 id="reschedule-title" className="text-lg font-semibold text-white">Reschedule appointment for {reschedulingBooking.client_name}</h3>
+              <button
+                type="button"
+                onClick={() => setReschedulingBooking(null)}
+                className="text-white/40 hover:text-white transition-colors"
+                aria-label="Close reschedule modal"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {rescheduleError && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg">
+                {rescheduleError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-white/40 uppercase tracking-wider mb-1 font-medium">1. Select New Date</label>
+                <div className="bg-white/5 border border-white/10 rounded-lg p-2">
+                  <BookingCalendar
+                    artistId={artistId}
+                    selectedDate={rescheduleDate}
+                    onDateSelect={(date) => {
+                      setRescheduleDate(date)
+                      setRescheduleTime(null)
+                      setRescheduleError(null)
+                    }}
+                    accentColor="#ffb700"
+                  />
+                </div>
+              </div>
+
+              {rescheduleDate && (
+                <div>
+                  <label className="block text-xs text-white/40 uppercase tracking-wider mb-1 font-medium">2. Select New Time</label>
+                  <div className="bg-white/5 border border-white/10 rounded-lg p-2">
+                    <ConsultationTimeSlots
+                      artistId={artistId}
+                      selectedDate={rescheduleDate}
+                      selectedTime={rescheduleTime}
+                      onTimeSelect={(time) => {
+                        setRescheduleTime(time)
+                        setRescheduleError(null)
+                      }}
+                      accentColor="#ffb700"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {rescheduleDate && rescheduleTime && (
+                <button
+                  type="button"
+                  onClick={handleRescheduleSubmit}
+                  disabled={rescheduling}
+                  className="w-full py-3 bg-white hover:bg-white/90 text-black font-semibold rounded-lg text-sm transition-colors mt-2 flex items-center justify-center gap-2"
+                >
+                  {rescheduling ? 'Rescheduling…' : 'Confirm Reschedule'}
+                </button>
+              )}
             </div>
           </div>
         </div>
