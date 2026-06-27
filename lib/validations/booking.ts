@@ -81,6 +81,11 @@ export const submitBookingSchema = z.object({
     .max(10, 'Maximum 10 reference images')
     .optional()
     .default([]),
+  flashDesignId: z
+    .string()
+    .uuid('Invalid flash design ID')
+    .nullable()
+    .optional(),
 })
 
 export type SubmitBookingInput = z.infer<typeof submitBookingSchema>

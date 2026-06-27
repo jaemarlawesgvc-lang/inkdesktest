@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { z } from 'zod'
 import { BookingCalendar } from '@/components/public/BookingCalendar'
 import { ConsultationTimeSlots } from '@/components/public/ConsultationTimeSlots'
@@ -15,6 +16,14 @@ interface BookingSectionProps {
   depositRequired: boolean
   depositAmount: number | null
   accentColor: string
+  flashDesigns?: {
+    id: string
+    title: string
+    price: number
+    size_cm: string | null
+    image_path: string
+    status: 'available' | 'booked' | 'hidden'
+  }[]
 }
 
 const formSchema = z.object({
@@ -61,7 +70,20 @@ export function BookingSection({
   depositRequired,
   depositAmount,
   accentColor,
+  flashDesigns = [],
 }: BookingSectionProps) {
+  const searchParams = useSearchParams()
+  const flashParam = searchParams.get('flash')
+  const [selectedFlashId, setSelectedFlashId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (flashParam) {
+      setSelectedFlashId(flashParam)
+    }
+  }, [flashParam])
+
+  const selectedFlash = flashDesigns.find((d) => d.id === selectedFlashId && d.status === 'available') ?? null
+
   const [stage, setStage] = useState<Stage>('form')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -206,6 +228,7 @@ export function BookingSection({
           durationHours: CONSULTATION_DURATION_HOURS,
           description: parsed.data.description ?? '',
           referenceImagePaths: referencePaths,
+          flashDesignId: selectedFlashId || null,
         }),
       })
 
@@ -433,6 +456,40 @@ export function BookingSection({
         )}
 
         <div className="space-y-5">
+          {selectedFlash && (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-4 items-center motion-safe:animate-fade-in">
+              <img
+                src={selectedFlash.image_path}
+                alt={selectedFlash.title}
+                className="w-16 h-16 object-cover rounded-xl border border-white/10"
+              />
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: accentColor }}>
+                  Selected Flash Design
+                </p>
+                <h4 className="text-white font-semibold text-sm mt-0.5">{selectedFlash.title}</h4>
+                <p className="text-white/40 text-xs mt-0.5">
+                  Price: £{Number(selectedFlash.price).toFixed(0)} {selectedFlash.size_cm ? `· ${selectedFlash.size_cm}` : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFlashId(null)
+                  const params = new URLSearchParams(window.location.search)
+                  params.delete('flash')
+                  window.history.replaceState({}, '', `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`)
+                }}
+                className="text-white/40 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-colors"
+                aria-label="Remove flash design"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label htmlFor="bk-name" className="block text-sm font-medium text-white/70">
               Name <span className="text-red-400" aria-hidden="true">*</span>

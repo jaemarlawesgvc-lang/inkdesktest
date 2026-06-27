@@ -71,6 +71,8 @@ export default async function SettingsPage() {
       <SettingsForm
         artistId={artist.id as string}
         plan={plan}
+        stripeConnectAccountId={artist.stripe_connect_account_id as string | null}
+        stripeConnectStatus={artist.stripe_connect_status as string | null}
         initialData={{
           emailBookingConfirmation: (artist.email_booking_confirmation as boolean) ?? true,
           emailReminders: (artist.email_reminders as boolean) ?? true,

@@ -34,6 +34,7 @@ interface ArtistRow {
     start_time: string
     end_time: string
   }[]
+  zoom_link?: string | null
 }
 
 export default async function OnboardingPage() {
@@ -133,8 +134,8 @@ export default async function OnboardingPage() {
     .sort((a, b) => a.day_of_week - b.day_of_week)
     .map((s) => ({
       dayOfWeek: s.day_of_week,
-      startTime: s.start_time.slice(0, 5),
-      endTime: s.end_time.slice(0, 5),
+      startTime: s.start_time ? s.start_time.slice(0, 5) : '',
+      endTime: s.end_time ? s.end_time.slice(0, 5) : '',
     }))
 
   const artistForWizard = {

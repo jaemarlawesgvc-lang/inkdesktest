@@ -35,6 +35,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     durationHours,
     description,
     referenceImagePaths,
+    flashDesignId,
   } = parsed.data
 
   const supabase = createSupabaseAdminClient()
@@ -200,6 +201,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       deposit_amount: depositActive ? artist.deposit_amount : null,
       deposit_paid: false,
       zoom_link: artist.zoom_link || null,
+      flash_design_id: flashDesignId || null,
       // access_token is a NOT NULL uuid with a DB default. The old code inserted
       // a 64-char hex string, which is invalid uuid syntax and failed every
       // insert — let Postgres generate it and read it back for the status link.
@@ -210,6 +212,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (bookingError || !booking) {
     console.error('[submit-booking] insert error:', bookingError?.message)
     return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
+  }
+
+  // If a flash design was chosen, mark it as booked to prevent others from booking it
+  if (flashDesignId) {
+    const { error: flashError } = await supabase
+      .from('flash_designs')
+      .update({ status: 'booked' })
+      .eq('id', flashDesignId)
+
+    if (flashError) {
+      console.error('[submit-booking] failed to update flash design status:', flashError.message)
+    }
   }
 
   // ── 7. Upsert client record ──

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { MEDICAL_QUESTIONS, type MedicalAnswers, type MedicalQuestionId } from '@/lib/consent/questions'
+import { SignatureCanvas } from '@/components/public/SignatureCanvas'
 
 interface ArtistInfo {
   artistId: string
@@ -30,6 +31,7 @@ export function ConsentFormView() {
   const [medicalAnswers, setMedicalAnswers] = useState<Partial<MedicalAnswers>>({})
   const [consentAgreed, setConsentAgreed] = useState(false)
   const [signatureName, setSignatureName] = useState('')
+  const [signatureImageData, setSignatureImageData] = useState<string | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -61,9 +63,9 @@ export function ConsentFormView() {
       tattooDescription.trim().length >= 5,
       ageConfirmed,
       answeredCount === MEDICAL_QUESTIONS.length,
-      consentAgreed && signatureName.trim().length >= 2,
+      consentAgreed && signatureName.trim().length >= 2 && !!signatureImageData,
     ],
-    [clientName, clientDob, tattooDescription, ageConfirmed, answeredCount, consentAgreed, signatureName],
+    [clientName, clientDob, tattooDescription, ageConfirmed, answeredCount, consentAgreed, signatureName, signatureImageData],
   )
   const progress = useMemo(
     () => Math.round((sectionsComplete.filter(Boolean).length / sectionsComplete.length) * 100),
@@ -95,6 +97,7 @@ export function ConsentFormView() {
           medicalAnswers,
           consentAgreed,
           signatureName: signatureName.trim(),
+          signatureImageData,
         }),
       })
       const json = await res.json()
@@ -267,13 +270,23 @@ export function ConsentFormView() {
             </span>
           </label>
           <div>
-            <label className="text-xs text-white/40 mb-1.5 block">Type your full name as your signature</label>
-            <input
-              className={`${inputCls} font-medium italic`}
-              value={signatureName}
-              onChange={(e) => setSignatureName(e.target.value)}
-              placeholder="Your full name"
-            />
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-white/40 mb-1.5 block">Draw your signature below</label>
+                <SignatureCanvas onChange={setSignatureImageData} disabled={submitting} />
+              </div>
+              
+              <div>
+                <label className="text-xs text-white/40 mb-1.5 block">Type your full name to confirm signature</label>
+                <input
+                  className={`${inputCls} font-medium italic`}
+                  value={signatureName}
+                  onChange={(e) => setSignatureName(e.target.value)}
+                  placeholder="Your full name"
+                  disabled={submitting}
+                />
+              </div>
+            </div>
           </div>
         </Section>
 

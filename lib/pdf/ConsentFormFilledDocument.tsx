@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Svg, Path, Rect } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, Svg, Path, Rect, Image } from '@react-pdf/renderer'
 import { MEDICAL_QUESTIONS, type MedicalAnswers } from '@/lib/consent/questions'
 
 const GOLD = '#d4af37'
@@ -64,6 +64,7 @@ interface ConsentFormFilledDocumentProps {
   tattooDescription: string
   medicalAnswers: MedicalAnswers
   signatureName: string
+  signatureImageData: string | null
   signedAt: string
   ipAddress: string | null
 }
@@ -113,6 +114,7 @@ export function ConsentFormFilledDocument({
   tattooDescription,
   medicalAnswers,
   signatureName,
+  signatureImageData,
   signedAt,
   ipAddress,
 }: ConsentFormFilledDocumentProps) {
@@ -214,7 +216,11 @@ export function ConsentFormFilledDocument({
           <View style={styles.signatureBlockOuter}>
             <View style={styles.signatureCol}>
               <Text style={styles.signatureLabel}>CLIENT SIGNATURE</Text>
-              <Text style={styles.signatureScript}>{signatureName}</Text>
+              {signatureImageData ? (
+                <Image src={signatureImageData} style={{ width: 140, height: 50, marginTop: 4, marginBottom: 4 }} />
+              ) : (
+                <Text style={styles.signatureScript}>{signatureName}</Text>
+              )}
               <Text style={styles.signatureMeta}>Submitted {formatDateTime(signedAt)}{ipAddress ? `  ·  IP ${ipAddress}` : ''}</Text>
             </View>
           </View>

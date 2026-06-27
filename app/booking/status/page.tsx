@@ -116,6 +116,15 @@ function BookingStatusContent() {
     }
   }
 
+  const isRescheduleLocked = () => {
+    if (!booking || !booking.bookingDate || !booking.bookingTime) return false
+    const apptDateStr = `${booking.bookingDate}T${booking.bookingTime.slice(0, 5)}:00`
+    const apptTime = new Date(apptDateStr).getTime()
+    const now = new Date().getTime()
+    const hoursDiff = (apptTime - now) / (1000 * 60 * 60)
+    return hoursDiff < 48
+  }
+
   const fetchStatus = async () => {
     if (!token) {
       setError('Missing booking access token. Please check the link in your email.')
@@ -320,7 +329,12 @@ function BookingStatusContent() {
           {/* Reschedule Consultation Section */}
           {booking.status !== 'cancelled' && booking.status !== 'completed' && (
             <div className="border-t border-white/5 pt-6 space-y-4">
-              {!rescheduleOpen ? (
+              {isRescheduleLocked() ? (
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center space-y-1">
+                  <p className="text-sm font-semibold text-white/70">Rescheduling is locked within 48 hours of appointment</p>
+                  <p className="text-xs text-white/40">Please contact your artist directly to request changes.</p>
+                </div>
+              ) : !rescheduleOpen ? (
                 <button
                   type="button"
                   onClick={() => setRescheduleOpen(true)}

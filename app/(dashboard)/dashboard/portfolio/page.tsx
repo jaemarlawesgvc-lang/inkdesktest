@@ -1,10 +1,10 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { PortfolioGrid } from '@/components/dashboard/PortfolioGrid'
+import { PortfolioManagerWrapper } from '@/components/dashboard/PortfolioManagerWrapper'
 import { resolveActivePlan } from '@/lib/stripe/plans'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Portfolio' }
+export const metadata: Metadata = { title: 'Portfolio & Flash' }
 
 export default async function PortfolioPage() {
   const supabase = await createSupabaseServerClient()
@@ -31,6 +31,7 @@ export default async function PortfolioPage() {
 
   const plan = resolveActivePlan(subscription)
 
+  // 1. Fetch gallery photos
   const { data: imageRows } = await supabase
     .from('portfolio_images')
     .select('id, storage_path, public_url, display_order, caption')
@@ -46,15 +47,37 @@ export default async function PortfolioPage() {
     caption: img.caption,
   }))
 
+  // 2. Fetch flash designs
+  const { data: flashRows } = await supabase
+    .from('flash_designs')
+    .select('id, title, price, size_cm, image_path, status, created_at')
+    .eq('artist_id', artist.id)
+    .order('created_at', { descending: true })
+
+  const flash = (flashRows ?? []).map((f) => ({
+    id: f.id,
+    title: f.title,
+    price: Number(f.price),
+    size_cm: f.size_cm,
+    image_path: f.image_path,
+    status: f.status as 'available' | 'booked' | 'hidden',
+    created_at: f.created_at,
+  }))
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Portfolio</h1>
+        <h1 className="text-2xl font-bold text-white">Portfolio & Flash</h1>
         <p className="text-white/40 text-sm mt-0.5">
-          Drag to reorder. Images appear on your public page in this order.
+          Manage your public gallery photos and upload flash designs for client booking.
         </p>
       </div>
-      <PortfolioGrid artistId={artist.id} images={images} plan={plan} />
+      <PortfolioManagerWrapper
+        artistId={artist.id}
+        images={images}
+        flash={flash}
+        plan={plan}
+      />
     </div>
   )
 }

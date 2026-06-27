@@ -41,7 +41,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Client-side reschedule via token
     const { data: booking, error: bookingErr } = await adminDb
       .from('bookings')
-      .select('id, artist_id, access_token')
+      .select('id, artist_id, access_token, booking_date, booking_time')
       .eq('id', bookingId)
       .single()
 
@@ -51,6 +51,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (booking.access_token !== token) {
       return NextResponse.json({ error: 'Invalid access token' }, { status: 403 })
+    }
+
+    // POLICY CHECK: Enforce 48h rescheduling lockout for clients
+    if (booking.booking_date && booking.booking_time) {
+      const apptDateStr = `${booking.booking_date}T${booking.booking_time.slice(0, 5)}:00`
+      const apptTime = new Date(apptDateStr).getTime()
+      const now = new Date().getTime()
+      const hoursDiff = (apptTime - now) / (1000 * 60 * 60)
+
+      if (hoursDiff < 48) {
+        return NextResponse.json(
+          { error: 'Rescheduling is locked within 48 hours of the appointment time.' },
+          { status: 400 },
+        )
+      }
     }
 
     artistId = booking.artist_id

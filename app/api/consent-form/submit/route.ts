@@ -35,6 +35,7 @@ const submitSchema = z.object({
   medicalAnswers: medicalAnswersSchema,
   consentAgreed: z.literal(true, { errorMap: () => ({ message: 'You must agree to the consent statement' }) }),
   signatureName: z.string().trim().min(2, 'Please type your full name as a signature').max(120),
+  signatureImageData: z.string().optional().nullable(),
 })
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       age_confirmed: true,
       medical_answers: data.medicalAnswers,
       signature_name: data.signatureName,
+      signature_image_data: data.signatureImageData || null,
       ip_address: ipAddress,
     })
     .select('id, signed_at')
@@ -109,6 +111,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         tattooDescription: data.tattooDescription,
         medicalAnswers: data.medicalAnswers,
         signatureName: data.signatureName,
+        signatureImageData: data.signatureImageData ?? null,
         signedAt: submission.signed_at,
         ipAddress,
       }),

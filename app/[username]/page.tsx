@@ -7,6 +7,7 @@ import { PublicHeader } from '@/components/public/PublicHeader'
 import { HeroSection } from '@/components/public/HeroSection'
 import { PortfolioMarquee } from '@/components/public/PortfolioMarquee'
 import { PortfolioSection } from '@/components/public/PortfolioSection'
+import { FlashDesignsSection } from '@/components/public/FlashDesignsSection'
 import { AboutSection } from '@/components/public/AboutSection'
 import { ServicesSection } from '@/components/public/ServicesSection'
 import { CredentialsSection } from '@/components/public/CredentialsSection'
@@ -61,6 +62,7 @@ interface ArtistRecord {
   site_data: SiteData | null
   onboarding_complete: boolean
   portfolio_images: { public_url: string; caption: string | null; display_order: number }[]
+  flash_designs: { id: string; title: string; price: number; size_cm: string | null; image_path: string; status: 'available' | 'booked' | 'hidden' }[]
   profiles: { email: string } | null
 }
 
@@ -82,6 +84,14 @@ async function loadArtist(username: string): Promise<ArtistRecord | null> {
         public_url,
         caption,
         display_order
+      ),
+      flash_designs (
+        id,
+        title,
+        price,
+        size_cm,
+        image_path,
+        status
       ),
       profiles (
         email
@@ -351,6 +361,8 @@ export default async function ArtistPage({
 
         <PortfolioSection images={portfolio} accentColor={accent} />
 
+        <FlashDesignsSection designs={artist.flash_designs ?? []} accentColor={accent} />
+
         <ServicesSection services={services} accentColor={accent} pricingNotes={artist.pricing_notes} />
 
         <ReviewsSection reviews={reviews} accentColor={accent} />
@@ -380,6 +392,7 @@ export default async function ArtistPage({
           depositRequired={artist.deposit_required}
           depositAmount={artist.deposit_amount}
           accentColor={accent}
+          flashDesigns={artist.flash_designs ?? []}
         />
 
         <Footer artistName={name} artistId={artist.id} artistEmail={artist.profiles?.email ?? undefined} />

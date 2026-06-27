@@ -9,6 +9,8 @@ import { PLAN_DISPLAY } from '@/lib/stripe/plans'
 import { UpgradeModal } from '@/components/dashboard/UpgradeModal'
 import { SUBSCRIPTION_TRIAL_DAYS } from '@/lib/constants'
 
+import { useEffect } from 'react'
+
 interface SettingsData {
   emailBookingConfirmation: boolean
   emailReminders: boolean
@@ -18,6 +20,8 @@ interface SettingsData {
 interface SettingsFormProps {
   artistId: string
   plan: Plan
+  stripeConnectAccountId?: string | null
+  stripeConnectStatus?: string | null
   initialData: SettingsData
 }
 
@@ -33,7 +37,13 @@ function Section({ id, title, description, children }: { id?: string; title: str
   )
 }
 
-export function SettingsForm({ artistId, plan, initialData }: SettingsFormProps) {
+export function SettingsForm({
+  artistId,
+  plan,
+  stripeConnectAccountId,
+  stripeConnectStatus,
+  initialData,
+}: SettingsFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [data, setData] = useState<SettingsData>(initialData)
@@ -41,6 +51,38 @@ export function SettingsForm({ artistId, plan, initialData }: SettingsFormProps)
   const [billingLoading, setBillingLoading] = useState(false)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+
+  const [connectLoading, setConnectLoading] = useState(false)
+  const [connectStatus, setConnectStatus] = useState(stripeConnectStatus ?? 'unlinked')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('stripe_connect') === 'success') {
+      toast.success('Stripe Connect onboarding completed successfully!')
+      setConnectStatus('pending')
+      router.replace('/dashboard/settings')
+    } else if (params.get('stripe_connect') === 'refresh') {
+      toast.error('Stripe Connect setup was interrupted. Please try again.')
+      router.replace('/dashboard/settings')
+    }
+  }, [router])
+
+  const handleStripeConnectOnboarding = async () => {
+    setConnectLoading(true)
+    try {
+      const res = await fetch('/api/stripe/connect-onboarding', { method: 'POST' })
+      const json = (await res.json()) as { url?: string; error?: string }
+      if (json.url) {
+        window.location.href = json.url
+      } else {
+        toast.error(json.error ?? 'Could not create onboarding link')
+      }
+    } catch {
+      toast.error('Could not initiate Stripe onboarding connection')
+    } finally {
+      setConnectLoading(false)
+    }
+  }
 
   const set = <K extends keyof SettingsData>(key: K, value: SettingsData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }))
@@ -144,6 +186,57 @@ export function SettingsForm({ artistId, plan, initialData }: SettingsFormProps)
             </>
           )}
         </div>
+      </Section>
+
+      {/* ── Payouts (Stripe Connect) ── */}
+      <Section id="payouts" title="Payouts" description="Receive client deposits directly to your bank account via Stripe Connect">
+        {connectStatus === 'verified' ? (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-emerald-400 text-sm font-medium flex items-center gap-1.5">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Stripe Connected
+              </p>
+              <p className="text-white/40 text-xs mt-0.5">Account ID: {stripeConnectAccountId}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleStripeConnectOnboarding}
+              disabled={connectLoading}
+              className="px-3.5 py-2 bg-white/10 text-white text-xs font-semibold rounded-lg hover:bg-white/20 transition-colors"
+            >
+              Stripe Dashboard →
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white text-sm font-medium">Link your payout details</p>
+                <p className="text-white/40 text-xs mt-0.5">
+                  {connectStatus === 'pending'
+                    ? 'Your account setup is pending verification.'
+                    : 'Set up split payouts to receive client deposits instantly.'}
+                </p>
+              </div>
+              {connectStatus === 'pending' && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  Pending Verification
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleStripeConnectOnboarding}
+              disabled={connectLoading}
+              className="px-4 py-2.5 bg-gold-500 text-ink-950 text-sm font-semibold rounded-lg shadow-gold hover:bg-gold-400 active:bg-gold-600 disabled:opacity-40 transition-colors"
+            >
+              {connectLoading ? 'Loading…' : connectStatus === 'pending' ? 'Resume Stripe Setup' : 'Connect Stripe Account'}
+            </button>
+          </div>
+        )}
       </Section>
 
       {/* ── Notifications ── */}
