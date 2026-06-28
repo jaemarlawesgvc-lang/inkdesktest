@@ -24,6 +24,8 @@ export type EmailType =
   | 'booking_pending'
   | 'booking_cancelled'
   | 'booking_completed'
+  | 'booking_upgraded'
+  | 'booking_rescheduled'
   | 'artist_notification'
   | 'reminder_48h'
   | 'aftercare'

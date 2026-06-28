@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
 export interface InvoiceData {
   invoiceNumber: string
   issueDate: string
+  bookingType?: string
   artistName: string
   artistEmail: string
   studioName: string | null
@@ -85,6 +86,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function InvoiceDocument({ data }: { data: InvoiceData }) {
+  const isConsultation = data.bookingType === 'consultation'
   const sessionAmt = data.sessionPrice ?? data.totalAmount ?? 0
   const depositAmt = data.depositPaid && data.depositAmount ? data.depositAmount : 0
   const balanceDue = Math.max(0, sessionAmt - depositAmt)
@@ -140,12 +142,12 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
           {/* Session */}
           <View style={styles.tableRow}>
             <View style={styles.colDesc}>
-              <Text style={styles.tableCell}>Tattoo session — {formatDate(data.bookingDate)}{data.bookingTime ? ` at ${data.bookingTime.slice(0, 5)}` : ''}</Text>
+              <Text style={styles.tableCell}>{isConsultation ? 'Online consultation' : 'Tattoo session'} — {formatDate(data.bookingDate)}{data.bookingTime ? ` at ${data.bookingTime.slice(0, 5)}` : ''}</Text>
               {data.description && (
                 <Text style={[styles.tableCellMuted, { marginTop: 3 }]}>{data.description}</Text>
               )}
             </View>
-            <Text style={[styles.tableCell, styles.colAmount]}>{sessionAmt > 0 ? formatCurrency(sessionAmt) : 'TBC'}</Text>
+            <Text style={[styles.tableCell, styles.colAmount]}>{sessionAmt > 0 ? formatCurrency(sessionAmt) : isConsultation ? 'Free' : 'TBC'}</Text>
           </View>
 
           {/* Deposit paid */}

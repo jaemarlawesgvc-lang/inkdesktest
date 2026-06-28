@@ -26,6 +26,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       id,
       booking_date,
       booking_time,
+      booking_type,
       duration_hours,
       zoom_link,
       status,
@@ -59,12 +60,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     studio_name: string | null
   } | null
 
+  const bookingData = booking as unknown as Record<string, unknown>
+
   return NextResponse.json({
     bookingId: booking.id,
-    artistId: booking.artist_id,
+    artistId: (bookingData.artist_id as string) ?? null,
     status: booking.status,
     bookingDate: booking.booking_date,
     bookingTime: booking.booking_time,
+    bookingType: (bookingData.booking_type as string) ?? 'live',
     clientName: booking.client_name,
     depositAmount: booking.deposit_amount,
     depositPaid: booking.deposit_paid,

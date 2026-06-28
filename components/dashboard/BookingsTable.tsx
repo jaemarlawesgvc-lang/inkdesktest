@@ -619,7 +619,7 @@ export function BookingsTable({ bookings, artistId, plan }: BookingsTableProps) 
                         >
                           {messagingId === booking.id ? 'Opening…' : 'Message'}
                         </button>
-                        <a
+                        {booking.booking_type === 'live' && <a
                           href={`/api/dashboard/bookings/${booking.id}/invoice`}
                           download
                           className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg transition-colors"
@@ -629,7 +629,7 @@ export function BookingsTable({ bookings, artistId, plan }: BookingsTableProps) 
                             <path fillRule="evenodd" d="M3 17.25A1.75 1.75 0 014.75 15.5h10.5A1.75 1.75 0 0117 17.25v.75a.75.75 0 01-1.5 0v-.75a.25.25 0 00-.25-.25H4.75a.25.25 0 00-.25.25v.75a.75.75 0 01-1.5 0v-.75z" clipRule="evenodd" />
                           </svg>
                           Invoice PDF
-                        </a>
+                        </a>}
                         {/* Upgrade button - show if booking is a consultation and confirmed/paid */}
                         {booking.booking_type === 'consultation' && (booking.status === 'confirmed' || booking.status === 'deposit_paid') && (
                           <button

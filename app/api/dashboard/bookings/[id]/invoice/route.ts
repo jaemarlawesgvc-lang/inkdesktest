@@ -32,7 +32,7 @@ export async function GET(
 
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, client_name, client_email, booking_date, booking_time, description, deposit_amount, deposit_paid, total_amount, created_at')
+    .select('id, client_name, client_email, booking_date, booking_time, booking_type, description, deposit_amount, deposit_paid, total_amount, created_at')
     .eq('id', id)
     .eq('artist_id', artist.id)
     .is('deleted_at', null)
@@ -46,11 +46,15 @@ export async function GET(
   const invoiceNumber = `INV-${booking.id.slice(0, 8).toUpperCase()}`
   const issueDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
+  const bookingRecord = booking as unknown as Record<string, unknown>
+  const bookingType = (bookingRecord.booking_type as string) ?? 'live'
+
   const buffer = await renderToBuffer(
     InvoiceDocument({
       data: {
         invoiceNumber,
         issueDate,
+        bookingType,
         artistName: artist.display_name ?? artist.username ?? 'Artist',
         artistEmail: artistProfile?.email ?? '',
         studioName: artist.studio_name ?? null,

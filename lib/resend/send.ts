@@ -34,6 +34,7 @@ export interface BookingWithArtist {
   artistUserId: string
   bookingDate: string
   bookingTime: string | null
+  bookingType: string
   depositAmount: number | null
   depositPaid: boolean
   description: string | null
@@ -54,6 +55,7 @@ function buildEmailData(
     artistName: booking.artistName,
     bookingDate: booking.bookingDate,
     bookingTime: booking.bookingTime,
+    bookingType: booking.bookingType,
     depositAmount: booking.depositAmount,
     depositPaid: booking.depositPaid,
     description: booking.description,
@@ -75,7 +77,7 @@ function buildEmailData(
     messageClientUrl: opts.includeDashboardUrl
       ? `${appUrl}/dashboard/messages?bookingId=${booking.bookingId}`
       : null,
-    zoomLink: booking.zoomLink,
+    zoomLink: booking.bookingType === 'consultation' ? booking.zoomLink : null,
   }
 }
 
@@ -500,6 +502,7 @@ export async function loadBookingWithArtist(
       client_email,
       booking_date,
       booking_time,
+      booking_type,
       deposit_amount,
       deposit_paid,
       description,
@@ -542,6 +545,7 @@ export async function loadBookingWithArtist(
     artistUserId: artist.user_id,
     bookingDate: booking.booking_date,
     bookingTime: booking.booking_time,
+    bookingType: (booking as Record<string, unknown>).booking_type as string ?? 'live',
     depositAmount: booking.deposit_amount,
     depositPaid: booking.deposit_paid,
     description: booking.description,
@@ -570,21 +574,25 @@ export async function sendBookingRescheduled(
   const { subject, html } = bookingRescheduledTemplate(data)
 
   // Send to client
-  const clientRes = await sendEmail(supabase, {
+  const clientRes = await sendEmail({
     to: booking.clientEmail,
     subject,
     html,
     bookingId: booking.bookingId,
     emailType: 'booking_rescheduled',
+    userId: null,
+    supabase,
   })
 
   // Send to artist
-  const artistRes = await sendEmail(supabase, {
+  const artistRes = await sendEmail({
     to: booking.artistEmail,
-    subject: `Rescheduled: Consultation with ${booking.clientName}`,
+    subject: `Rescheduled: ${booking.bookingType === 'consultation' ? 'Consultation' : 'Appointment'} with ${booking.clientName}`,
     html,
     bookingId: booking.bookingId,
     emailType: 'booking_rescheduled',
+    userId: null,
+    supabase,
   })
 
   return {

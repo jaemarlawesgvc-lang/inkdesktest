@@ -83,6 +83,7 @@ export interface BookingEmailData {
   artistName: string
   bookingDate: string
   bookingTime: string | null
+  bookingType?: string
   depositAmount: number | null
   depositPaid: boolean
   description: string | null
@@ -105,6 +106,7 @@ export function bookingConfirmationTemplate(data: BookingEmailData): {
   subject: string
   html: string
 } {
+  const isConsultation = data.bookingType === 'consultation'
   const dateDisplay = formatDate(data.bookingDate)
   const timeDisplay = formatTime(data.bookingTime)
 
@@ -113,15 +115,18 @@ export function bookingConfirmationTemplate(data: BookingEmailData): {
        <td style="padding:8px 0;color:#ffffff;font-size:14px;text-align:right;">&pound;${data.depositAmount.toFixed(2)}</td></tr>`
     : ''
 
-  const locationLine = data.studioAddress
+  const locationLine = !isConsultation && data.studioAddress
     ? `<tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">Location</td>
        <td style="padding:8px 0;color:#ffffff;font-size:14px;text-align:right;">${esc(data.studioAddress)}</td></tr>`
     : ''
 
-  const zoomLine = data.zoomLink
+  const typeRow = `<tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">Type</td>
+    <td style="padding:8px 0;color:#ffffff;font-size:14px;text-align:right;">${isConsultation ? 'Online Consultation (Google Meet)' : 'Tattoo Session'}</td></tr>`
+
+  const zoomLine = isConsultation && data.zoomLink
     ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-bottom:24px;">
 <tr>
-  <td style="color:#ffffff;font-size:14px;font-weight:600;padding-bottom:8px;">Google Meet Consultation</td>
+  <td style="color:#ffffff;font-size:14px;font-weight:600;padding-bottom:8px;">Join your consultation</td>
 </tr>
 <tr>
   <td style="color:#94a3b8;font-size:13px;padding-bottom:12px;line-height:1.4;">Your consultation will take place online via Google Meet. Click the button below to join at the scheduled time.</td>
@@ -132,35 +137,48 @@ export function bookingConfirmationTemplate(data: BookingEmailData): {
 </table>`
     : ''
 
+  const preparationSection = isConsultation
+    ? `<h2 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#ffffff;">Getting ready for your consultation</h2>
+<ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#a3a3a3;line-height:1.8;">
+<li>Gather any reference images, sketches, or ideas you have in mind</li>
+<li>Think about placement and sizing (upper arm, forearm, back, etc.)</li>
+<li>Note down any questions you want to ask your artist</li>
+<li>Make sure you&rsquo;re in a quiet spot with a good internet connection</li>
+</ul>`
+    : `<h2 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#ffffff;">What to bring</h2>
+<ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#a3a3a3;line-height:1.8;">
+<li>Photo ID</li>
+<li>Reference images (if any)</li>
+<li>Comfortable clothing that gives easy access to the tattoo area</li>
+<li>A snack and water for longer sessions</li>
+</ul>`
+
   const content = `
-<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">Booking confirmed</h1>
+<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">${isConsultation ? 'Consultation confirmed' : 'Booking confirmed'}</h1>
 <p style="margin:0 0 24px;font-size:15px;color:#a3a3a3;line-height:1.5;">
-  Hi ${esc(data.clientName)}, your appointment with <strong style="color:#ffffff;">${esc(data.artistName)}</strong> is confirmed.
+  Hi ${esc(data.clientName)}, your ${isConsultation ? 'consultation' : 'appointment'} with <strong style="color:#ffffff;">${esc(data.artistName)}</strong> is confirmed.
 </p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#262626;border-radius:8px;padding:16px;margin-bottom:24px;">
+${typeRow}
 <tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">Date</td>
     <td style="padding:8px 0;color:#ffffff;font-size:14px;text-align:right;">${dateDisplay}${timeDisplay}</td></tr>
 ${depositLine}
 ${locationLine}
 </table>
 ${zoomLine}
-<h2 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#ffffff;">What to bring</h2>
-<ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#a3a3a3;line-height:1.8;">
-<li>Photo ID</li>
-<li>Reference images (if any)</li>
-<li>Comfortable clothing for the tattoo area</li>
-<li>A snack and water for longer sessions</li>
-</ul>
+${preparationSection}
 <h2 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#ffffff;">Cancellation policy</h2>
 <p style="margin:0 0 24px;font-size:14px;color:#a3a3a3;line-height:1.5;">
-  Please contact your artist at least 48 hours before your appointment if you need to cancel or reschedule.
-  Late cancellations may forfeit the deposit.
+  Please contact your artist at least 48 hours before your ${isConsultation ? 'consultation' : 'appointment'} if you need to cancel or reschedule.
+  ${!isConsultation ? 'Late cancellations may forfeit the deposit.' : ''}
 </p>
-${data.consentFormUrl ? `<p style="margin:0 0 16px;font-size:14px;color:#a3a3a3;line-height:1.5;">Please complete your consent form online before your appointment — it takes about two minutes.</p><a href="${data.consentFormUrl}" style="display:inline-block;margin:0 0 24px;padding:12px 24px;background-color:#ffffff;color:#000000;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Fill out consent form</a>` : ''}
+${!isConsultation && data.consentFormUrl ? `<p style="margin:0 0 16px;font-size:14px;color:#a3a3a3;line-height:1.5;">Please complete your consent form online before your appointment — it takes about two minutes.</p><a href="${data.consentFormUrl}" style="display:inline-block;margin:0 0 24px;padding:12px 24px;background-color:#ffffff;color:#000000;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">Fill out consent form</a>` : ''}
 ${data.statusUrl ? `<a href="${data.statusUrl}" style="display:inline-block;padding:12px 24px;background-color:#ffffff;color:#000000;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">View booking status</a>` : ''}`
 
   return {
-    subject: `Your booking with ${data.artistName} is confirmed`,
+    subject: isConsultation
+      ? `Your consultation with ${data.artistName} is confirmed`
+      : `Your booking with ${data.artistName} is confirmed`,
     html: layout(content, data.artistEmail ?? undefined),
   }
 }
@@ -223,18 +241,19 @@ export function reminder48hTemplate(data: BookingEmailData): {
   subject: string
   html: string
 } {
+  const isConsultation = data.bookingType === 'consultation'
   const dateDisplay = formatDate(data.bookingDate)
   const timeDisplay = formatTime(data.bookingTime)
 
-  const locationLine = data.studioAddress
+  const locationLine = !isConsultation && data.studioAddress
     ? `<tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">Location</td>
        <td style="padding:8px 0;color:#ffffff;font-size:14px;text-align:right;">${esc(data.studioAddress)}</td></tr>`
     : ''
 
-  const zoomLine48h = data.zoomLink
+  const zoomLine48h = isConsultation && data.zoomLink
     ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-bottom:24px;">
 <tr>
-  <td style="color:#ffffff;font-size:14px;font-weight:600;padding-bottom:8px;">Google Meet Consultation</td>
+  <td style="color:#ffffff;font-size:14px;font-weight:600;padding-bottom:8px;">Join your consultation</td>
 </tr>
 <tr>
   <td style="color:#94a3b8;font-size:13px;padding-bottom:12px;line-height:1.4;">Your consultation is online via Google Meet. Click below to join at the scheduled time.</td>
@@ -245,10 +264,27 @@ export function reminder48hTemplate(data: BookingEmailData): {
 </table>`
     : ''
 
+  const prepSection = isConsultation
+    ? `<h2 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#ffffff;">Before your consultation</h2>
+<ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#a3a3a3;line-height:1.8;">
+<li>Have your reference images or ideas ready to share on screen</li>
+<li>Jot down any questions about sizing, placement, or pricing</li>
+<li>Make sure your internet connection is stable</li>
+</ul>`
+    : `<h2 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#ffffff;">Preparation tips</h2>
+<ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#a3a3a3;line-height:1.8;">
+<li>Get a good night&rsquo;s sleep</li>
+<li>Eat a full meal before your session</li>
+<li>Stay hydrated — drink plenty of water</li>
+<li>Avoid alcohol for 24 hours before your appointment</li>
+<li>Moisturise the area (but not on the day)</li>
+<li>Wear comfortable, loose-fitting clothing that gives access to the tattoo area</li>
+</ul>`
+
   const content = `
-<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">Your appointment is tomorrow</h1>
+<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">Your ${isConsultation ? 'consultation' : 'appointment'} is tomorrow</h1>
 <p style="margin:0 0 24px;font-size:15px;color:#a3a3a3;line-height:1.5;">
-  Hi ${esc(data.clientName)}, just a reminder about your appointment with <strong style="color:#ffffff;">${esc(data.artistName)}</strong>.
+  Hi ${esc(data.clientName)}, just a reminder about your ${isConsultation ? 'consultation' : 'appointment'} with <strong style="color:#ffffff;">${esc(data.artistName)}</strong>.
 </p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#262626;border-radius:8px;padding:16px;margin-bottom:24px;">
 <tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">Date</td>
@@ -256,21 +292,15 @@ export function reminder48hTemplate(data: BookingEmailData): {
 ${locationLine}
 </table>
 ${zoomLine48h}
-<h2 style="margin:0 0 8px;font-size:15px;font-weight:600;color:#ffffff;">Preparation tips</h2>
-<ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#a3a3a3;line-height:1.8;">
-<li>Get a good night&rsquo;s sleep</li>
-<li>Eat a full meal before your session</li>
-<li>Stay hydrated — drink plenty of water</li>
-<li>Avoid alcohol for 24 hours before your appointment</li>
-<li>Moisturise the area (but not on the day)</li>
-<li>Wear comfortable, loose-fitting clothing</li>
-</ul>
+${prepSection}
 <p style="margin:0;font-size:14px;color:#a3a3a3;line-height:1.5;">
   Need to cancel or reschedule? Please contact your artist as soon as possible.
 </p>`
 
   return {
-    subject: `Your tattoo appointment is tomorrow — ${data.artistName}`,
+    subject: isConsultation
+      ? `Your consultation is tomorrow — ${data.artistName}`
+      : `Your tattoo appointment is tomorrow — ${data.artistName}`,
     html: layout(content, data.artistEmail ?? undefined),
   }
 }
@@ -283,32 +313,33 @@ export function reminder7dayTemplate(data: BookingEmailData): {
   subject: string
   html: string
 } {
+  const isConsultation = data.bookingType === 'consultation'
   const dateDisplay = formatDate(data.bookingDate)
   const timeDisplay = formatTime(data.bookingTime)
 
-  const locationLine = data.studioAddress
+  const locationLine = !isConsultation && data.studioAddress
     ? `<tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">Location</td>
        <td style="padding:8px 0;color:#ffffff;font-size:14px;text-align:right;">${esc(data.studioAddress)}</td></tr>`
     : ''
 
-  const zoomLine7day = data.zoomLink
+  const zoomLine7day = isConsultation && data.zoomLink
     ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-bottom:24px;">
 <tr>
-  <td style="color:#ffffff;font-size:14px;font-weight:600;padding-bottom:8px;">Google Meet Consultation</td>
+  <td style="color:#ffffff;font-size:14px;font-weight:600;padding-bottom:8px;">Save your Google Meet link</td>
 </tr>
 <tr>
-  <td style="color:#94a3b8;font-size:13px;padding-bottom:12px;line-height:1.4;">Your consultation is online via Google Meet. Save this link to join at the scheduled time.</td>
+  <td style="color:#94a3b8;font-size:13px;padding-bottom:12px;line-height:1.4;">Your consultation is online via Google Meet. Save this link so you&rsquo;re ready on the day.</td>
 </tr>
 <tr>
-  <td><a href="${data.zoomLink}" style="display:inline-block;padding:10px 20px;background-color:#2563eb;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;border-radius:6px;">Join Google Meet</a></td>
+  <td><a href="${data.zoomLink}" style="display:inline-block;padding:10px 20px;background-color:#2563eb;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;border-radius:6px;">Open Google Meet</a></td>
 </tr>
 </table>`
     : ''
 
   const content = `
-<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">Your appointment is in one week</h1>
+<h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#ffffff;">Your ${isConsultation ? 'consultation' : 'appointment'} is in one week</h1>
 <p style="margin:0 0 24px;font-size:15px;color:#a3a3a3;line-height:1.5;">
-  Hi ${esc(data.clientName)}, your appointment with <strong style="color:#ffffff;">${esc(data.artistName)}</strong> is coming up.
+  Hi ${esc(data.clientName)}, your ${isConsultation ? 'consultation' : 'appointment'} with <strong style="color:#ffffff;">${esc(data.artistName)}</strong> is coming up.
 </p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#262626;border-radius:8px;padding:16px;margin-bottom:24px;">
 <tr><td style="padding:8px 0;color:#a3a3a3;font-size:14px;">Date</td>
@@ -322,7 +353,9 @@ ${zoomLine7day}
 ${data.statusUrl ? `<a href="${data.statusUrl}" style="display:inline-block;margin-top:24px;padding:12px 24px;background-color:#ffffff;color:#000000;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">View booking status</a>` : ''}`
 
   return {
-    subject: `Your appointment with ${data.artistName} is in one week`,
+    subject: isConsultation
+      ? `Your consultation with ${data.artistName} is in one week`
+      : `Your appointment with ${data.artistName} is in one week`,
     html: layout(content, data.artistEmail ?? undefined),
   }
 }
